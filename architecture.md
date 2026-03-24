@@ -10,7 +10,7 @@ MURAL is a wall-mounted drawing robot controlled by an ESP32 microcontroller. Tw
 |---|---|---|
 | MCU | NodeMCU ESP32 (WROOM-32) | WiFi + compute |
 | Motors | 2× NEMA 17 stepper (200 steps/rev) | Pancake form factor |
-| Drivers | 2× TMC2209 | 1/8 microstepping → 1600 steps/rev |
+| Drivers | 2× TMC2209 | 1/16 microstepping → 3200 steps/rev |
 | Pulleys | GT2, 20-tooth, ⌀12.69 mm effective | Belt pitch 2 mm |
 | Pen actuator | MG90s metal gear servo | GPIO 2, PWM |
 | Display | Adafruit SSD1306 128×64 OLED | I2C 0x3C |
@@ -135,9 +135,9 @@ Central class. Owns both AccelStepper instances and all kinematic logic.
 | `setTopDistance(mm)` | Set anchor separation, compute safe drawing area |
 
 **Speed constants:**
-- Drawing: 500 steps/sec ≈ 12.5 mm/sec
-- Rapid travel: 1500 steps/sec ≈ 37.5 mm/sec
-- Resolution: 1600 steps/rev × 1/π × 1/12.69 mm ≈ **0.025 mm per step**
+- Drawing: 500 steps/sec ≈ 6.2 mm/sec
+- Rapid travel: 1500 steps/sec ≈ 18.7 mm/sec
+- Resolution: 3200 steps/rev ÷ (π × 12.69 mm) ≈ **0.012 mm per step**
 
 ---
 
@@ -206,7 +206,29 @@ On completion the ESP32 auto-restarts.
 
 ---
 
-### 6. Pen Control (`src/pen.cpp`)
+### 6. Log System (`src/main.cpp`)
+
+A runtime log buffer enables diagnosis without a serial connection. The buffer holds up to 50 entries; older entries are evicted when full.
+
+```cpp
+std::vector<String> logBuffer;   // max 50 entries, FIFO eviction
+void addLog(const String& msg);  // writes to Serial + logBuffer
+```
+
+`addLog()` is declared as `extern` and called from all phase files, `movement.cpp`, and `runner.cpp`. Two HTTP endpoints expose it:
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/log` | GET | Returns all buffered log lines as plain text |
+| `/clearLog` | POST | Empties the buffer |
+
+The web UI shows a floating "Logs" button (bottom-right, all screens) that opens a modal with Refresh and Clear controls.
+
+Serial baud rate: **9600** (`Serial.begin(9600)` in `setup()`).
+
+---
+
+### 7. Pen Control (`src/pen.cpp`)
 
 The pen is attached to a servo. Two angles matter:
 - **Up** — fixed at 90°
@@ -216,7 +238,7 @@ Movement is gradual: `slowUp()` and `slowDown()` step the servo at 90°/sec in 1
 
 ---
 
-### 7. Display (`src/display.cpp`)
+### 8. Display (`src/display.cpp`)
 
 SSD1306 OLED over I2C. Two screens:
 - **Home screen** — shows IP address and `mural.local` after boot
@@ -311,8 +333,9 @@ The user uploads an image or SVG in the browser. The Web Worker runs the full pr
 
 ### Phase 5 — Begin Drawing
 The user clicks "Run". The firmware:
-1. Opens `/commands` and reads the header (`d`, `h` lines)
-2. Loops:
+1. Calls `runner->start()`, then immediately calls `server->end()` — **the web server shuts down** to give the ESP32 full CPU for motor control. The `/log` endpoint becomes unavailable from this point.
+2. Opens `/commands` and reads the header (`d`, `h` lines)
+3. Loops:
    - Parse next line
    - If coordinate: create `InterpolatingMovementTask`
      - Walk 1 mm at a time toward target
@@ -320,7 +343,7 @@ The user clicks "Run". The firmware:
      - `runSteppers()` pulses motors every loop cycle until target reached
    - If `p1`/`p0`: create `PenTask` → slowly move servo to down/up angle
    - Track progress, update OLED
-3. When file is exhausted, auto-restart ESP32
+4. When file is exhausted, auto-restart ESP32
 
 ---
 
@@ -341,7 +364,7 @@ The user clicks "Run". The firmware:
 | Endpoint | Method | Phase | Purpose |
 |---|---|---|---|
 | `/` | GET | all | Serve web UI |
-| `/getState` | GET | all | JSON: phase, moving, x, y |
+| `/getState` | GET | all | JSON: phase, moving, topDistance, safeWidth, homeX, homeY |
 | `/command` | POST | 0 | Jog motor (`l-ext`, `r-ret`, etc.) |
 | `/setTopDistance` | POST | 1 | Set anchor pin distance |
 | `/estepsCalibration` | POST | 1 | Extend 1000 mm for calibration |
@@ -350,8 +373,11 @@ The user clicks "Run". The firmware:
 | `/setPenDistance` | POST | 3 | Lock pen-down angle |
 | `/uploadCommands` | POST | 4 | Upload command file |
 | `/downloadCommands` | GET | all | Download existing command file |
-| `/run` | POST | 5 | Start drawing |
+| `/run` | POST | 5 | Start drawing (shuts down web server after) |
 | `/doneWithPhase` | POST | 5 | Reset for next job |
+| `/resume` | POST | any | Resume from known home without full recalibration |
+| `/log` | GET | all | Fetch buffered log lines as plain text |
+| `/clearLog` | POST | all | Clear the log buffer |
 
 ---
 
@@ -403,9 +429,9 @@ After building, LittleFS image is flashed separately (`pio run --target uploadfs
 
 | Metric | Value |
 |---|---|
-| Drawing speed | 500 steps/sec ≈ 12.5 mm/sec |
-| Rapid travel speed | 1500 steps/sec ≈ 37.5 mm/sec |
-| Position resolution | ~0.025 mm/step |
+| Drawing speed | 500 steps/sec ≈ 6.2 mm/sec |
+| Rapid travel speed | 1500 steps/sec ≈ 18.7 mm/sec |
+| Position resolution | ~0.012 mm/step |
 | Servo slew rate | 90°/sec |
 | Kinematic iterations | typically 1–3 (max 20) per waypoint |
 | Interpolation step | 1 mm per kinematic call |
