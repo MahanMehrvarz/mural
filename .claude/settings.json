@@ -12,7 +12,8 @@
       "Bash(/Users/mmehrvarz/miniconda3/envs/MURAL/bin/platformio run:*)",
       "Bash(npm install:*)",
       "Bash(npm run:*)",
-      "Bash(npx webpack:*)"
+      "Bash(npx webpack:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
