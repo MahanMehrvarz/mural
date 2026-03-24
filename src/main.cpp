@@ -6,6 +6,7 @@
 #include <LittleFS.h>
 #include <Wire.h>
 #include <ESPmDNS.h>
+#include <vector>
 #include "movement.h"
 #include "runner.h"
 #include "pen.h"
@@ -13,6 +14,17 @@
 #include "phases/phasemanager.h"
 
 AsyncWebServer server(80);
+
+std::vector<String> logBuffer;
+const int LOG_BUFFER_MAX = 50;
+
+void addLog(const String& msg) {
+    Serial.println(msg);
+    if ((int)logBuffer.size() >= LOG_BUFFER_MAX) {
+        logBuffer.erase(logBuffer.begin());
+    }
+    logBuffer.push_back(msg);
+}
 
 Movement *movement;
 Runner *runner;
@@ -56,9 +68,9 @@ void setup()
     std::function<void()> serverCallback = [&] () {
         resetAfterConnect = true;
     };
-    
+
     WiFiManager wifiManager;
-    
+
     wifiManager.setConnectTimeout(20);
     wifiManager.setTitle("Connect to WiFi");
     wifiManager.setMenu(menu);
@@ -69,7 +81,7 @@ void setup()
         Serial.println("Connected to WiFi through captive portal, restarting...");
         ESP.restart();
     }
-    
+
     Serial.println("Connected to wifi");
 
     MDNS.begin("mural");
@@ -130,6 +142,19 @@ void setup()
     );
 
     server.onNotFound(notFound);
+
+    server.on("/log", HTTP_GET, [](AsyncWebServerRequest *request) {
+        String output = "";
+        for (auto& entry : logBuffer) {
+            output += entry + "\n";
+        }
+        request->send(200, "text/plain", output);
+    });
+
+    server.on("/clearLog", HTTP_POST, [](AsyncWebServerRequest *request) {
+        logBuffer.clear();
+        request->send(200, "text/plain", "OK");
+    });
 
     Serial.println("Finished setting up the server");
 

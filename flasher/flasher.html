@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mural — Local Firmware Flasher</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      margin: 0;
+      padding: 24px 16px 48px;
+    }
+
+    .container { max-width: 640px; margin: 0 auto; }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 0 0 4px;
+    }
+    .subtitle { color: #666; font-size: 0.875rem; margin: 0 0 24px; }
+
+    /* Steps */
+    .step {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px 22px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #0057d8;
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-title { font-weight: 600; font-size: 0.95rem; }
+    .step-desc  { font-size: 0.82rem; color: #666; margin: 0 0 14px; line-height: 1.5; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px;
+      border: none; border-radius: 6px;
+      font-size: 0.875rem; font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+    }
+    .btn-primary   { background: #0057d8; color: #fff; }
+    .btn-primary:hover:not(:disabled)   { background: #0046b0; }
+    .btn-secondary { background: #e4e7ed; color: #333; }
+    .btn-secondary:hover:not(:disabled) { background: #d4d8e1; }
+    .btn-success   { background: #1a9e52; color: #fff; }
+    .btn-success:hover:not(:disabled)   { background: #157d41; }
+    .btn:disabled  { opacity: .45; cursor: not-allowed; }
+
+    /* Status line */
+    .status {
+      font-size: 0.82rem; margin-top: 8px; min-height: 18px;
+    }
+    .status.ok   { color: #1a9e52; }
+    .status.err  { color: #d0021b; }
+    .status.info { color: #555; }
+
+    /* Binary list */
+    .binary-list { font-family: monospace; font-size: 0.8rem; margin-bottom: 12px; }
+    .binary-list .row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+    .binary-list .icon-ok   { color: #1a9e52; }
+    .binary-list .icon-miss { color: #d0021b; }
+
+    /* Progress */
+    .progress-wrap { margin-top: 10px; }
+    progress {
+      width: 100%; height: 6px;
+      border-radius: 3px; border: none;
+      appearance: none;
+    }
+    progress::-webkit-progress-bar   { background: #e4e7ed; border-radius: 3px; }
+    progress::-webkit-progress-value { background: #0057d8; border-radius: 3px; }
+    .progress-label { font-size: 0.78rem; color: #666; margin-top: 4px; }
+
+    /* Console */
+    #console {
+      background: #111;
+      color: #00cc55;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.75rem;
+      line-height: 1.5;
+      padding: 12px 14px;
+      border-radius: 6px;
+      height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Chip badge */
+    .chip-badge {
+      display: inline-block;
+      background: #e8f0fe; color: #0057d8;
+      border-radius: 4px; padding: 2px 8px;
+      font-family: monospace; font-size: 0.8rem;
+      margin-top: 6px;
+    }
+
+    /* Warning banner */
+    .banner {
+      border-radius: 8px; padding: 10px 14px;
+      font-size: 0.82rem; margin-bottom: 20px;
+    }
+    .banner.warn { background: #fffbe6; border: 1px solid #f0c040; color: #7a5c00; }
+    .banner.info-blue { background: #e8f0fe; border: 1px solid #b3c8f8; color: #1a3a80; }
+
+    code { font-family: monospace; background: #f0f2f5; padding: 1px 5px; border-radius: 3px; }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>🖨️ Mural — Local Firmware Flasher</h1>
+  <p class="subtitle">Flash your locally-built firmware to the ESP32. Requires Chrome or Edge (v89+).</p>
+
+  <div class="banner warn" id="fileWarn" style="display:none">
+    ⚠️  This page must be served by <code>python3 flasher/serve.py</code>
+    — do not open it as a file directly.
+  </div>
+
+  <div class="banner warn" id="serialWarn" style="display:none">
+    ⚠️  <strong>Web Serial API not available.</strong>
+    Please open this page in <strong>Chrome</strong> or <strong>Edge</strong> (v89+).
+    Copy the URL and paste it into Chrome: <code id="serialWarnUrl"></code>
+  </div>
+
+  <!-- ── Step 1: Build ──────────────────────────────────────────────────── -->
+  <div class="step" id="step1">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div class="step-title">Build Firmware</div>
+    </div>
+    <p class="step-desc">
+      Compiles the C++ firmware and bundles the TypeScript web UI into LittleFS.<br>
+      Skip this step if you already ran <code>pio run</code> and <code>pio run --target buildfs</code>.
+    </p>
+    <div id="binaryList" class="binary-list">Checking…</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="buildBtn">Build now (~1 min)</button>
+      <button class="btn btn-secondary" id="skipBuildBtn">Skip — use existing binaries</button>
+    </div>
+    <div id="buildStatus" class="status info"></div>
+  </div>
+
+  <!-- ── Step 2: Connect ───────────────────────────────────────────────── -->
+  <div class="step" id="step2">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div class="step-title">Connect Device</div>
+    </div>
+    <p class="step-desc">
+      Plug in the ESP32 via USB. Hold the <strong>BOOT</strong> button on the board
+      while clicking Connect to enter flash mode.
+    </p>
+    <button class="btn btn-primary" id="connectBtn" disabled>Connect Device</button>
+    <div id="connectStatus" class="status info"></div>
+    <div id="chipBadge"></div>
+  </div>
+
+  <!-- ── Step 3: Flash ─────────────────────────────────────────────────── -->
+  <div class="step" id="step3">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div class="step-title">Flash Firmware</div>
+    </div>
+    <p class="step-desc">
+      Writes all five binary files to the ESP32 flash memory.
+      This takes about 30–60 seconds.
+    </p>
+    <button class="btn btn-success" id="flashBtn" disabled>⚡ Flash Firmware</button>
+    <div class="progress-wrap" id="progressWrap" style="display:none;">
+      <progress id="flashProgress" value="0" max="100"></progress>
+      <div id="progressLabel" class="progress-label"></div>
+    </div>
+    <div id="flashStatus" class="status info"></div>
+  </div>
+
+  <!-- ── Step 4: Console ───────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <div class="step-title">Console</div>
+    </div>
+    <div id="console"></div>
+  </div>
+
+  <div class="banner info-blue" id="doneMsg" style="display:none;">
+    ✅ Flash complete! Unplug and replug the ESP32 (or press the <strong>EN / Reset</strong>
+    button). Then connect to the <strong>Mural</strong> WiFi network to configure it.
+  </div>
+
+</div><!-- /container -->
+
+<!-- CryptoJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+<script type="module">
+// Buffer must be on window before esptool-js loads (it uses Buffer as a global)
+const { Buffer } = await import("https://cdn.jsdelivr.net/npm/buffer@6/+esm");
+window.Buffer = Buffer;
+
+const { ESPLoader, Transport } = await import("https://unpkg.com/esptool-js@0.4.3/bundle.js");
+
+const SERVER = location.origin;
+
+if (location.protocol === "file:") {
+  document.getElementById("fileWarn").style.display = "";
+}
+
+if (!navigator.serial) {
+  const warn = document.getElementById("serialWarn");
+  document.getElementById("serialWarnUrl").textContent = location.href;
+  warn.style.display = "";
+  document.getElementById("connectBtn").disabled = true;
+}
+
+const FLASH_FILES = [
+  { name: "bootloader.bin", address: 0x1000    },
+  { name: "partitions.bin", address: 0x8000    },
+  { name: "boot_app0.bin",  address: 0xE000    },
+  { name: "firmware.bin",   address: 0x10000   },
+  { name: "littlefs.bin",   address: 0x13C000  },
+];
+
+let espLoader = null;
+let transport  = null;
+
+// ── Console ──────────────────────────────────────────────────────────────
+
+function log(text, color) {
+  const el = document.getElementById("console");
+  const span = document.createElement("span");
+  span.style.color = color || "#00cc55";
+  span.textContent = String(text) + "\n";
+  el.appendChild(span);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── Status helpers ────────────────────────────────────────────────────────
+
+function setStatus(id, text, type) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = "status " + (type || "info");
+}
+
+// ── Binary conversion (chunked to avoid stack overflow on large files) ────
+
+function bufferToString(buf) {
+  const bytes = new Uint8Array(buf);
+  const chunkSize = 0x8000; // 32 KB
+  let result = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    result += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return result;
+}
+
+// ── Step 1: Binary status ─────────────────────────────────────────────────
+
+async function refreshBinaryStatus() {
+  const listEl = document.getElementById("binaryList");
+  try {
+    const res = await fetch(`${SERVER}/status`);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const status = await res.json();
+
+    listEl.innerHTML = FLASH_FILES.map(f => {
+      const s = status[f.name];
+      const ok = s && s.found;
+      return `<div class="row">
+        <span class="${ok ? "icon-ok" : "icon-miss"}">${ok ? "✓" : "✗"}</span>
+        <span>${f.name}</span>
+        ${ok ? "" : '<span style="color:#d0021b;font-size:0.75rem;">— not found</span>'}
+      </div>`;
+    }).join("");
+
+    const allReady = FLASH_FILES.every(f => status[f.name] && status[f.name].found);
+    if (allReady && navigator.serial) {
+      document.getElementById("connectBtn").disabled = false;
+      setStatus("buildStatus", "All binaries ready.", "ok");
+    }
+    return allReady;
+  } catch (e) {
+    listEl.innerHTML = `<span style="color:#d0021b;">Cannot reach server — is <code>serve.py</code> running?</span>`;
+    return false;
+  }
+}
+
+// ── Step 1: Build ─────────────────────────────────────────────────────────
+
+document.getElementById("buildBtn").addEventListener("click", async () => {
+  document.getElementById("buildBtn").disabled   = true;
+  document.getElementById("skipBuildBtn").disabled = true;
+  setStatus("buildStatus", "Building… this may take 1–2 minutes. Watch the terminal for details.", "info");
+  log("Starting firmware build via serve.py…", "#ffaa00");
+
+  try {
+    const res  = await fetch(`${SERVER}/build`, { method: "POST" });
+    const data = await res.json();
+    if (data.ok) {
+      log("Build complete!", "#00cc55");
+      setStatus("buildStatus", "Build complete!", "ok");
+      await refreshBinaryStatus();
+    } else {
+      log("Build failed: " + data.message, "#ff4444");
+      setStatus("buildStatus", data.message, "err");
+    }
+  } catch (e) {
+    log("Build request failed: " + e.message, "#ff4444");
+    setStatus("buildStatus", "Cannot reach server.", "err");
+  }
+
+  document.getElementById("buildBtn").disabled   = false;
+  document.getElementById("skipBuildBtn").disabled = false;
+});
+
+document.getElementById("skipBuildBtn").addEventListener("click", async () => {
+  await refreshBinaryStatus();
+});
+
+// ── Step 2: Connect ───────────────────────────────────────────────────────
+
+document.getElementById("connectBtn").addEventListener("click", async () => {
+  document.getElementById("connectBtn").disabled = true;
+  setStatus("connectStatus", "Waiting for port selection…", "info");
+
+  try {
+    const port = await navigator.serial.requestPort();
+
+    transport = new Transport(port, true);
+
+    const terminal = {
+      clean()        {},
+      writeLine(d)   { log(d); },
+      write(d)       { log(d); },
+    };
+
+    espLoader = new ESPLoader({ transport, baudrate: 115200, terminal, debugLogging: false });
+
+    setStatus("connectStatus", "Connecting…", "info");
+    log("Connecting to ESP32…", "#ffaa00");
+
+    const chip = await espLoader.main();
+
+    setStatus("connectStatus", `Connected — ${chip}`, "ok");
+    log(`Connected! Chip: ${chip}`, "#00cc55");
+    document.getElementById("chipBadge").innerHTML = `<span class="chip-badge">${chip}</span>`;
+    document.getElementById("flashBtn").disabled = false;
+
+  } catch (e) {
+    setStatus("connectStatus", "Connection failed: " + e.message, "err");
+    log("Connection failed: " + e.message, "#ff4444");
+    document.getElementById("connectBtn").disabled = false;
+  }
+});
+
+// ── Step 3: Flash ─────────────────────────────────────────────────────────
+
+document.getElementById("flashBtn").addEventListener("click", async () => {
+  document.getElementById("flashBtn").disabled = true;
+  document.getElementById("progressWrap").style.display = "block";
+  document.getElementById("doneMsg").style.display = "none";
+  setStatus("flashStatus", "Fetching binaries from local server…", "info");
+  log("\nFetching firmware binaries…", "#ffaa00");
+
+  try {
+    // ── Fetch all binaries ──────────────────────────────────────────────
+    const fileArray = [];
+    for (const f of FLASH_FILES) {
+      log(`  ↓ ${f.name}`);
+      const res = await fetch(`${SERVER}/firmware/${f.name}`);
+      if (!res.ok) throw new Error(`Failed to fetch ${f.name}: HTTP ${res.status}`);
+      const buf  = await res.arrayBuffer();
+      const data = bufferToString(buf);
+      fileArray.push({ data, address: f.address });
+      log(`  ✓ ${f.name}  (${(buf.byteLength / 1024).toFixed(1)} KB)`, "#00cc55");
+    }
+
+    log("\nStarting flash…", "#ffaa00");
+    setStatus("flashStatus", "Flashing…", "info");
+
+    // ── Write to flash ──────────────────────────────────────────────────
+    await espLoader.writeFlash({
+      fileArray,
+      flashSize:  "keep",
+      flashMode:  "dio",
+      flashFreq:  "40m",
+      eraseAll:   false,
+      compress:    true,
+
+      reportProgress(fileIndex, written, total) {
+        const pct  = Math.round(written / total * 100);
+        const name = FLASH_FILES[fileIndex].name;
+        document.getElementById("flashProgress").value = pct;
+        document.getElementById("progressLabel").textContent =
+          `${name}  ${pct}%  (${(written / 1024).toFixed(0)} / ${(total / 1024).toFixed(0)} KB)`;
+        setStatus("flashStatus", `Flashing ${name}… ${pct}%`, "info");
+      },
+
+      calculateMD5Hash(image) {
+        return CryptoJS.MD5(CryptoJS.enc.Latin1.parse(image)).toString();
+      },
+    });
+
+    // ── Done ────────────────────────────────────────────────────────────
+    document.getElementById("flashProgress").value = 100;
+    document.getElementById("progressLabel").textContent = "Done!";
+    log("\n✅ Flash complete!", "#00cc55");
+    setStatus("flashStatus", "Flash complete — reset the ESP32.", "ok");
+    document.getElementById("doneMsg").style.display = "block";
+
+    await transport.disconnect();
+    transport  = null;
+    espLoader  = null;
+
+  } catch (e) {
+    log("Flash failed: " + e.message, "#ff4444");
+    setStatus("flashStatus", "Flash failed: " + e.message, "err");
+    document.getElementById("flashBtn").disabled = false;
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+
+// Warn if Web Serial isn't available (Firefox, etc.)
+if (!("serial" in navigator)) {
+  document.querySelectorAll("button").forEach(b => b.disabled = true);
+  const banner = document.createElement("div");
+  banner.className = "banner warn";
+  banner.innerHTML = "⚠️ <strong>Web Serial API not available.</strong> Please open this page in Chrome or Edge (v89+).";
+  document.querySelector(".container").prepend(banner);
+}
+
+// Check binaries on page load
+refreshBinaryStatus();
+</script>
+</body>
+</html>

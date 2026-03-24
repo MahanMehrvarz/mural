@@ -6,7 +6,9 @@ RetractBeltsPhase::RetractBeltsPhase(PhaseManager* manager, Movement* movement) 
 }
 
 void RetractBeltsPhase::doneWithPhase(AsyncWebServerRequest *request) {
-    manager->setPhase(PhaseManager::ExtendToHome);
+    extern void addLog(const String& msg);
+    addLog("RetractBelts: user confirmed belts retracted");
+    manager->setPhase(PhaseManager::SetTopDistance);
     manager->respondWithState(request);
 }
 

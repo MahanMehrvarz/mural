@@ -107,9 +107,16 @@ Movement::Point Movement::getHomeCoordinates() {
 
 int Movement::extendToHome()
 {
+    extern void addLog(const String& msg);
     setOrigin();
 
     auto homeCoordinates = getHomeCoordinates();
+    addLog(String("extendToHome: topDistance=") + topDistance +
+           " width=" + String(width) +
+           " homeX=" + String(homeCoordinates.x) +
+           " homeY=" + String(homeCoordinates.y) +
+           " originSteps=" + String(homedStepsOffset));
+
     startedHoming = true;
     auto moveTime = beginLinearTravel(homeCoordinates.x, homeCoordinates.y, moveSpeedSteps);
     return int(ceil(moveTime));
@@ -337,25 +344,36 @@ float Movement::beginLinearTravel(double x, double y, int speed)
     X = x;
     Y = y;
     if (topDistance == -1 || !homed) {
-        Serial.println("Not ready");
+        extern void addLog(const String& msg);
+        addLog(String("ERROR beginLinearTravel: not ready. topDistance=") + String(topDistance) + " homed=" + String(homed));
         throw std::invalid_argument("not ready");
     }
 
     if (x < 0 || (x - 1) > width)
     {
-        Serial.println("Invalid x");
+        extern void addLog(const String& msg);
+        addLog(String("ERROR beginLinearTravel: invalid x=") + String(x) + " width=" + String(width));
         throw std::invalid_argument("Invalid x");
     }
 
     if (y < 0)
     {
-        Serial.println("Invalid y");
+        extern void addLog(const String& msg);
+        addLog(String("ERROR beginLinearTravel: invalid y=") + String(y));
         throw std::invalid_argument("Invalid y");
     }
 
     auto lengths = getBeltLengths(x, y);
     auto leftLegSteps = lengths.left;
     auto rightLegSteps = lengths.right;
+
+    extern void addLog(const String& msg);
+    addLog(String("beginLinearTravel: x=") + String(x) + " y=" + String(y) +
+           " leftSteps=" + String(leftLegSteps) + " rightSteps=" + String(rightLegSteps) +
+           " leftNow=" + String(leftMotor->currentPosition()) +
+           " rightNow=" + String(rightMotor->currentPosition()) +
+           " leftMM=" + String(leftLegSteps / stepsPerRotation * circumference) +
+           " rightMM=" + String(rightLegSteps / stepsPerRotation * circumference));
 
     auto deltaLeft = int(abs(abs(leftMotor->currentPosition()) - leftLegSteps));
     auto deltaRight = int(abs(abs(rightMotor->currentPosition()) - rightLegSteps));

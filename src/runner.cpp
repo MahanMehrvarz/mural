@@ -16,8 +16,9 @@ Runner::Runner(Movement *movement, Pen *pen, Display *display) {
 
 void Runner::initTaskProvider() {
     openedFile = LittleFS.open("/commands");
+    extern void addLog(const String& msg);
     if (!openedFile || !openedFile.available()) {
-        Serial.println("Failed to open file");
+        addLog("Runner: ERROR failed to open /commands file");
         throw std::invalid_argument("No File");
     }
 
@@ -38,7 +39,8 @@ void Runner::initTaskProvider() {
         throw std::invalid_argument("bad file");
     }
 
-    Serial.println("Total distance to travel: " + String(totalDistance));
+    extern void addLog(const String& msg);
+    addLog(String("Runner: commands loaded, totalDistance=") + String(totalDistance) + "mm");
 
     distanceSoFar = 0;
     progress = -1; // so 0% appears right away
@@ -89,6 +91,8 @@ Task *Runner::getNextTask()
             return finishingSequence[currentIx];
         } else {
             // DistanceState::storeDistance(movement->getTopDistance());
+            extern void addLog(const String& msg);
+            addLog("Runner: drawing complete, returning to home then restarting");
             delay(200);
             ESP.restart();
             // unreachable
@@ -115,7 +119,8 @@ void Runner::run()
                 newProgress = 100;
             }
             if (progress != newProgress) {
-                Serial.println("Progress: " + String(newProgress));
+                extern void addLog(const String& msg);
+                addLog(String("Runner: progress=") + String(newProgress) + "%");
                 progress = newProgress;
                 display->displayText(String(progress) + "%");
             }

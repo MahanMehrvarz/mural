@@ -26,33 +26,34 @@ Phase* PhaseManager::getCurrentPhase() {
 }
 
 void PhaseManager::setPhase(PhaseNames name) {
-    Serial.print("Switching current phase to ");
+    extern void addLog(const String& msg);
     switch (name) {
         case PhaseNames::RetractBelts:
-            Serial.println("RetractBelts");
+            addLog("Phase -> RetractBelts");
             currentPhase = retractBeltsPhase;
             break;
         case PhaseNames::SetTopDistance:
-            Serial.println("SetTopDistance");
+            addLog("Phase -> SetTopDistance");
             currentPhase = setTopDistancePhase;
             break;
         case PhaseNames::ExtendToHome:
-            Serial.println("ExtendToHome");
+            addLog("Phase -> ExtendToHome");
             currentPhase = extendToHomePhase;
             break;
         case PhaseNames::PenCalibration:
-            Serial.println("PenCalibration");
+            addLog("Phase -> PenCalibration");
             currentPhase = penCalibrationPhase;
             break;
         case PhaseNames::SvgSelect:
-            Serial.println("SvgSelect");
+            addLog("Phase -> SvgSelect");
             currentPhase = svgSelectPhase;
             break;
         case PhaseNames::BeginDrawing:
-            Serial.println("BeginDrawing");
+            addLog("Phase -> BeginDrawing");
             currentPhase = beginDrawingPhase;
             break;
         default:
+            addLog("ERROR: setPhase called with invalid phase name");
             throw std::invalid_argument("Invalid Phase");
     }
 }
@@ -82,5 +83,5 @@ void PhaseManager::respondWithState(AsyncWebServerRequest *request) {
 }
 
 void PhaseManager::reset() {
-    setPhase(PhaseManager::SetTopDistance);
+    setPhase(PhaseManager::RetractBelts);
 }

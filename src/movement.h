@@ -10,7 +10,7 @@ constexpr int printSpeedSteps = 500;
 constexpr int  moveSpeedSteps = 1500;
 constexpr long INFINITE_STEPS = 999999999;
 constexpr long acceleration = 999999999;  // Essentially infinite, causing instant stop / start
-constexpr int stepsPerRotation = 200 * 8; // 1/8 microstepping
+constexpr int stepsPerRotation = 200 * 16; // 1/16 microstepping
 
 // Geometry parameters:
 // Effective diameter of the pulley+belts. Use EStep calibration to refine this value.

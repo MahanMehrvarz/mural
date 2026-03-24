@@ -9,9 +9,10 @@ SetTopDistancePhase::SetTopDistancePhase(PhaseManager* manager, Movement* moveme
 void SetTopDistancePhase::setTopDistance(AsyncWebServerRequest *request) {
     const AsyncWebParameter* p = request->getParam(0);
     int distance = p->value().toInt();
-    Serial.println("Setting distance");
-    movement->setTopDistance(distance); 
-    manager->setPhase(PhaseManager::SvgSelect);
+    extern void addLog(const String& msg);
+    addLog(String("SetTopDistance: param='") + p->value() + "' parsed=" + String(distance));
+    movement->setTopDistance(distance);
+    manager->setPhase(PhaseManager::ExtendToHome);
     manager->respondWithState(request);
 }
 

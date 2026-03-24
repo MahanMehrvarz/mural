@@ -442,6 +442,28 @@ function init() {
         client.leftRetractUp();
     });
 
+    async function fetchLogs() {
+        try {
+            const res = await $.get("/log");
+            $("#logContent").text(res || "(no logs yet)");
+            const el = $("#logContent")[0];
+            el.scrollTop = el.scrollHeight;
+        } catch (err) {
+            $("#logContent").text("Failed to fetch logs: " + err);
+        }
+    }
+
+    $("#showLogsBtn").click(function() {
+        fetchLogs();
+        new bootstrap.Modal(document.getElementById('logModal')).show();
+    });
+
+    $("#refreshLogsBtn").click(fetchLogs);
+
+    $("#clearLogsBtn").click(function() {
+        $.post("/clearLog", {}, fetchLogs);
+    });
+
     svgControl.initSvgControl();
 
     $("#loadingSlide").show();

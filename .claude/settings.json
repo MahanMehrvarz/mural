@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/mmehrvarz/miniconda3/envs/MURAL/bin/**)",
+      "Read(//Users/mmehrvarz/miniconda3/envs/MURAL/**)",
+      "Bash(find /Users/mmehrvarz/miniconda3/envs/MURAL -name *.dist-info -path *platformio*)",
+      "Bash(ls -la /Users/mmehrvarz/Library/CloudStorage/OneDrive-DelftUniversityofTechnology/00-CODE/MURAL/.pio/build/esp32dev/*.bin)",
+      "Bash(ls -la /Users/mmehrvarz/Library/CloudStorage/OneDrive-DelftUniversityofTechnology/00-CODE/MURAL/src/movement.cpp /Users/mmehrvarz/Library/CloudStorage/OneDrive-DelftUniversityofTechnology/00-CODE/MURAL/src/main.cpp /Users/mmehrvarz/Library/CloudStorage/OneDrive-DelftUniversityofTechnology/00-CODE/MURAL/src/phases/*.cpp)",
+      "Read(//dev/**)",
+      "Bash(system_profiler SPUSBDataType)",
+      "Bash(ioreg -p IOUSB -l -w0)",
+      "Bash(/Users/mmehrvarz/miniconda3/envs/MURAL/bin/platformio run:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npx webpack:*)"
+    ]
+  }
+}

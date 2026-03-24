@@ -31,7 +31,7 @@ export async function rightExtendUp() {
 }
 
 async function postCommand(command) {
-    $.post("/command", {command}).fail(function() {
+    return $.post("/command", {command}).fail(function() {
         alert("Command failed");
         location.reload();
     });
