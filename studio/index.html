@@ -27,7 +27,6 @@
     }
 
     html { font-size: 16px; }
-
     body {
       background: var(--bg);
       color: var(--text);
@@ -37,7 +36,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Page wrapper ──────────────────────────────────────────────── */
     .studio {
       max-width: 600px;
       margin: 0 auto;
@@ -46,21 +44,14 @@
 
     /* ── Header ────────────────────────────────────────────────────── */
     .studio-header { margin-bottom: clamp(2.25rem, 6vw, 4rem); }
-
     .studio-header h1 {
       font-family: var(--ff-head);
       font-size: clamp(1.625rem, 4vw, 2.125rem);
       font-weight: 600;
       letter-spacing: -0.035em;
       line-height: 1.15;
-      color: var(--text);
     }
-
-    .studio-header p {
-      margin-top: 0.4rem;
-      font-size: 0.875rem;
-      color: var(--text-2);
-    }
+    .studio-header p { margin-top: 0.4rem; font-size: 0.875rem; color: var(--text-2); }
 
     /* ── Steps ─────────────────────────────────────────────────────── */
     .step {
@@ -69,25 +60,22 @@
       column-gap: 1rem;
       margin-bottom: 1.5rem;
     }
-
     .step-num {
       font-family: var(--ff-head);
       font-size: 1.375rem;
       font-weight: 600;
       color: var(--num-dim);
       line-height: 1;
-      padding-top: 1.125rem;   /* aligns with step-label text */
+      padding-top: 1.125rem;
       text-align: right;
       user-select: none;
     }
-
     .step-body {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--r);
       padding: 1.125rem 1.375rem 1.25rem;
     }
-
     .step-label {
       font-family: var(--ff-head);
       font-size: 0.75rem;
@@ -95,7 +83,14 @@
       letter-spacing: 0.09em;
       text-transform: uppercase;
       color: var(--text-2);
+      margin-bottom: 0.25rem;
+    }
+    /* Explainer text under each step label */
+    .step-explainer {
+      font-size: 0.8125rem;
+      color: var(--text-2);
       margin-bottom: 0.875rem;
+      line-height: 1.5;
     }
 
     /* ── Drop zone ─────────────────────────────────────────────────── */
@@ -112,41 +107,28 @@
     #dropZone:hover     { border-color: var(--accent); color: var(--text); }
     #dropZone.drag-over { border-color: var(--accent); background: oklch(97.5% 0.02 35); color: var(--accent); }
     #dropZone.has-file  { border-color: var(--success); color: var(--success); }
-
-    .drop-icon {
-      font-size: 1.75rem;
-      display: block;
-      margin-bottom: 0.4rem;
-      opacity: 0.4;
-      transition: opacity .2s;
-    }
+    .drop-icon { font-size: 1.75rem; display: block; margin-bottom: 0.4rem; opacity: 0.4; transition: opacity .2s; }
     #dropZone.has-file .drop-icon { opacity: 0.9; }
 
     /* ── Preview images ────────────────────────────────────────────── */
-    #sourceSvgImg,
-    #resultPreview {
+    #sourceSvgImg {
       display: block;
-      width: 100%;
-      max-height: 260px;
+      width: 100%; max-height: 260px;
       object-fit: contain;
       background: white;
       border: 1px solid var(--border);
       border-radius: calc(var(--r) - 1px);
       margin-top: 0.75rem;
+      overflow: hidden;
     }
 
-    /* ── Number inputs ─────────────────────────────────────────────── */
-    .dim-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem 0.875rem;
+    /* ── Canvas size viz ───────────────────────────────────────────── */
+    .canvas-inputs-row {
+      display: flex; flex-wrap: wrap;
+      align-items: center; gap: 0.5rem 0.875rem;
+      margin-bottom: 0.875rem;
     }
-    .dim-row label {
-      font-size: 0.8125rem;
-      color: var(--text-2);
-      white-space: nowrap;
-    }
+    .canvas-inputs-row label { font-size: 0.8125rem; color: var(--text-2); white-space: nowrap; }
 
     input[type="number"] {
       width: 88px;
@@ -163,201 +145,212 @@
     }
     input[type="number"]:focus { border-color: var(--accent); }
 
-    .hint { font-size: 0.8125rem; color: var(--text-2); margin-top: 0.625rem; }
+    /* Canvas proportion visualiser */
+    .canvas-viz-wrap {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: calc(var(--r) - 1px);
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 80px;
+    }
+    #canvasVizBox {
+      border: 2px solid var(--accent);
+      border-radius: 2px;
+      background: white;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: width .25s, height .25s;
+      max-width: 100%;
+    }
+    #canvasVizLabel {
+      font-family: var(--ff-head);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-2);
+      white-space: nowrap;
+    }
+    .canvas-viz-hint {
+      font-size: 0.75rem;
+      color: var(--text-2);
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+
+    /* ── Range sliders ─────────────────────────────────────────────── */
+    input[type="range"] {
+      appearance: none; width: 100%; height: 3px;
+      background: var(--border); border-radius: 2px;
+      cursor: pointer; outline: none; margin: 0.4rem 0 0.25rem; display: block;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none; width: 15px; height: 15px; border-radius: 50%;
+      background: var(--accent); cursor: pointer; transition: transform .15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
 
     /* ── D-pad ─────────────────────────────────────────────────────── */
     .dpad-grid {
       display: grid;
       grid-template-columns: repeat(3, 38px);
       grid-template-rows:    repeat(3, 38px);
-      gap: 3px;
-      margin: 0 auto 0.75rem;
-      width: fit-content;
+      gap: 3px; margin: 0 auto 0.75rem; width: fit-content;
     }
     .dpad-grid .empty { pointer-events: none; }
-
-    .zoom-row {
-      display: flex;
-      justify-content: center;
-      gap: 6px;
-      margin-bottom: 0.5rem;
-    }
-
+    .zoom-row { display: flex; justify-content: center; gap: 6px; margin-bottom: 0.5rem; }
     #transformText {
-      display: block;
-      text-align: center;
-      font-size: 0.8125rem;
-      color: var(--text-2);
-      font-variant-numeric: tabular-nums;
+      display: block; text-align: center;
+      font-size: 0.8125rem; color: var(--text-2); font-variant-numeric: tabular-nums;
     }
 
-    /* ── Range sliders ─────────────────────────────────────────────── */
-    input[type="range"] {
-      appearance: none;
-      width: 100%;
-      height: 3px;
-      background: var(--border);
-      border-radius: 2px;
-      cursor: pointer;
-      outline: none;
-      margin: 0.4rem 0 0.25rem;
-      display: block;
-    }
-    input[type="range"]::-webkit-slider-thumb {
-      appearance: none;
-      width: 15px; height: 15px;
-      border-radius: 50%;
-      background: var(--accent);
-      cursor: pointer;
-      transition: transform .15s;
-    }
-    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
-
-    /* ── Field labels ──────────────────────────────────────────────── */
+    /* ── Field labels & badges ─────────────────────────────────────── */
     .field-label {
-      display: block;
-      font-size: 0.8125rem;
-      color: var(--text-2);
-      margin-top: 1rem;
-      margin-bottom: 0.15rem;
+      display: block; font-size: 0.8125rem; color: var(--text-2);
+      margin-top: 1rem; margin-bottom: 0.15rem;
     }
     .field-label:first-child { margin-top: 0; }
-
     .badge-val {
-      display: inline-block;
-      font-family: var(--ff-head);
-      font-size: 0.75rem;
-      font-weight: 600;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 0 0.4rem;
-      color: var(--text);
-      margin-left: 0.3rem;
-      min-width: 1.8rem;
-      text-align: center;
-      vertical-align: middle;
+      display: inline-block; font-family: var(--ff-head);
+      font-size: 0.75rem; font-weight: 600;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+      padding: 0 0.4rem; color: var(--text); margin-left: 0.3rem;
+      min-width: 1.8rem; text-align: center; vertical-align: middle;
     }
 
-    /* ── Radio + checkbox ──────────────────────────────────────────── */
     .radio-group { display: flex; flex-direction: column; gap: 0.45rem; }
-
-    .radio-row,
-    .check-row {
-      display: flex;
-      align-items: center;
-      gap: 0.55rem;
-      font-size: 0.9rem;
-      cursor: pointer;
+    .radio-row, .check-row {
+      display: flex; align-items: center; gap: 0.55rem;
+      font-size: 0.9rem; cursor: pointer;
     }
-    .radio-row input,
-    .check-row input {
-      accent-color: var(--accent);
-      width: 1rem; height: 1rem;
-      cursor: pointer;
-      flex-shrink: 0;
+    .radio-row input, .check-row input {
+      accent-color: var(--accent); width: 1rem; height: 1rem;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .option-hint {
+      font-size: 0.8rem; color: var(--text-2);
+      margin: 0.15rem 0 0 1.55rem; line-height: 1.4;
     }
 
     .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+    .hint { font-size: 0.8125rem; color: var(--text-2); margin-top: 0.625rem; }
 
     /* ── Buttons ───────────────────────────────────────────────────── */
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.375rem;
-      font-family: var(--ff-body);
-      font-size: 0.9rem;
-      font-weight: 500;
-      border: 1px solid transparent;
-      border-radius: var(--r);
-      padding: 0.55rem 1rem;
-      cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 0.375rem; font-family: var(--ff-body); font-size: 0.9rem; font-weight: 500;
+      border: 1px solid transparent; border-radius: var(--r);
+      padding: 0.55rem 1rem; cursor: pointer;
       transition: background .15s, border-color .15s, opacity .15s;
-      white-space: nowrap;
-      text-decoration: none;
-      line-height: 1.4;
+      white-space: nowrap; text-decoration: none; line-height: 1.4;
     }
     .btn:active:not(:disabled) { opacity: 0.82; }
     .btn:disabled { opacity: 0.38; cursor: not-allowed; }
     .btn i { font-size: 0.95em; }
-
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-primary:hover:not(:disabled) { background: var(--accent-hi); }
-
-    .btn-success { background: var(--success); color: white; }
-    .btn-success:hover:not(:disabled) { background: oklch(46% 0.13 148); }
-
-    .btn-outline { background: transparent; color: var(--text); border-color: var(--border); }
-    .btn-outline:hover:not(:disabled) { border-color: var(--text-2); }
-
-    .btn-sm { font-size: 0.8125rem; padding: 0.35rem 0.7rem; }
+    .btn-primary  { background: var(--accent); color: white; }
+    .btn-primary:hover:not(:disabled)  { background: var(--accent-hi); }
+    .btn-success  { background: var(--success); color: white; }
+    .btn-success:hover:not(:disabled)  { background: oklch(46% 0.13 148); }
+    .btn-outline  { background: transparent; color: var(--text); border-color: var(--border); }
+    .btn-outline:hover:not(:disabled)  { border-color: var(--text-2); }
+    .btn-sm  { font-size: 0.8125rem; padding: 0.35rem 0.7rem; }
     .btn-block { width: 100%; }
 
-    /* ── Progress bar ──────────────────────────────────────────────── */
-    .progress-wrap { margin: 0.75rem 0; }
-
+    /* ── Progress ──────────────────────────────────────────────────── */
+    .progress-wrap { margin: 0.875rem 0 0; }
     .progress-track {
-      height: 26px;
-      background: var(--border);
-      border-radius: var(--r);
-      overflow: hidden;
+      height: 26px; background: var(--border); border-radius: var(--r); overflow: hidden;
     }
-
-    /* progressBar is manipulated directly by the worker JS:
-       - adds/removes .progress-bar-animated for running state
-       - adds .bg-success for done state
-       - sets .textContent for status text                          */
     .progress-bar {
       width: 100%; height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      color: white;
-      background: var(--accent);
-      transition: background .4s;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8125rem; font-weight: 500; color: white;
+      background: var(--accent); transition: background .4s;
     }
     .progress-bar.progress-bar-animated {
-      background: linear-gradient(
-        90deg,
-        var(--accent) 0%,
-        oklch(63% 0.14 35) 50%,
-        var(--accent) 100%
-      );
+      background: linear-gradient(90deg, var(--accent) 0%, oklch(63% 0.14 35) 50%, var(--accent) 100%);
       background-size: 200% 100%;
       animation: shimmer 1.8s infinite linear;
     }
-    .progress-bar.bg-success {
-      background: var(--success);
-      animation: none;
-    }
+    .progress-bar.bg-success { background: var(--success); animation: none; }
     @keyframes shimmer {
       0%   { background-position:  200% 0; }
       100% { background-position: -200% 0; }
     }
 
-    /* ── Info / notes ──────────────────────────────────────────────── */
-    .info-text {
-      font-size: 0.8125rem;
-      color: var(--text-2);
-      margin-top: 0.5rem;
+    /* Phase log — shows each completed processing step */
+    .phase-log {
+      margin-top: 0.625rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
     }
-    .export-note {
-      font-size: 0.8125rem;
+    .phase-entry {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      font-size: 0.8rem;
       color: var(--text-2);
+      animation: fadeIn .2s ease;
+    }
+    .phase-entry .dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0;
+      position: relative; top: -1px;
+    }
+    .phase-entry.done .dot { background: var(--success); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; } }
+
+    /* ── Result preview ────────────────────────────────────────────── */
+    .result-section {
+      margin-top: 1.125rem;
+      padding-top: 1.125rem;
+      border-top: 1px solid var(--border);
+    }
+    .result-label {
+      font-family: var(--ff-head);
+      font-size: 0.75rem; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-2); margin-bottom: 0.5rem;
+    }
+    #resultPreview {
+      display: block; width: 100%;
+      max-height: 320px; object-fit: contain;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--r) - 1px);
+    }
+    .result-meta {
+      font-size: 0.8125rem; color: var(--text-2);
+      margin-top: 0.5rem;
+      display: flex; gap: 1.25rem; flex-wrap: wrap;
+    }
+    .result-meta span { display: flex; align-items: center; gap: 0.35rem; }
+    .result-confirm {
       margin-top: 0.75rem;
-      line-height: 1.55;
+      font-size: 0.8rem;
+      color: var(--text-2);
+      background: oklch(96% 0.02 148);
+      border: 1px solid oklch(82% 0.06 148);
+      border-radius: calc(var(--r) - 2px);
+      padding: 0.5rem 0.75rem;
+      line-height: 1.5;
+    }
+
+    .export-note {
+      font-size: 0.8125rem; color: var(--text-2);
+      margin-top: 0.875rem; line-height: 1.55;
     }
     .export-note code {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 0.8em;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 0.1em 0.35em;
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8em;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 3px; padding: 0.1em 0.35em;
     }
+
+    .info-text { font-size: 0.8125rem; color: var(--text-2); margin-top: 0.5rem; }
   </style>
 </head>
 <body>
@@ -378,6 +371,10 @@
     <div class="step-num">01</div>
     <div class="step-body">
       <div class="step-label">Upload SVG</div>
+      <p class="step-explainer">
+        Choose the artwork file you want to draw. SVG line art works best —
+        black strokes on a white background. Filled shapes will be traced as outlines.
+      </p>
       <div id="dropZone">
         <i class="bi-file-earmark-image drop-icon"></i>
         <span id="dropLabel">Drop an SVG here, or click to browse</span>
@@ -392,13 +389,27 @@
     <div class="step-num">02</div>
     <div class="step-body">
       <div class="step-label">Canvas Size</div>
-      <div class="dim-row">
+      <p class="step-explainer">
+        Set how large the drawing will be on the wall, in millimeters.
+        A good starting point is <strong>60 % of your pin-to-pin distance</strong>
+        for width — this leaves enough margin on both sides for the belt geometry to
+        stay accurate.
+      </p>
+      <div class="canvas-inputs-row">
         <label for="canvasWidth">Width (mm)</label>
         <input type="number" id="canvasWidth" value="700" min="100" max="4000">
         <label for="canvasHeight">Height (mm)</label>
         <input type="number" id="canvasHeight" placeholder="auto" min="100" max="4000">
       </div>
-      <p class="hint">Canvas width ≈ 60 % of your pin-to-pin wall distance.</p>
+      <!-- Live proportion visualiser -->
+      <div class="canvas-viz-wrap">
+        <div>
+          <div id="canvasVizBox">
+            <span id="canvasVizLabel">700 mm wide</span>
+          </div>
+          <p class="canvas-viz-hint" id="canvasVizHint">Aspect ratio preview</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -407,6 +418,12 @@
     <div class="step-num">03</div>
     <div class="step-body">
       <div class="step-label">Position &amp; Zoom</div>
+      <p class="step-explainer">
+        Shift or scale the artwork <em>within</em> the fixed canvas.
+        The canvas dimensions stay the same — only where the artwork sits inside
+        them changes. Use this to centre the subject or zoom in to fill the space.
+        Artwork outside the canvas boundary will be clipped.
+      </p>
       <div class="dpad-grid">
         <div class="empty"></div>
         <button class="btn btn-outline" id="panUp"   ><i class="bi-arrow-up"></i></button>
@@ -432,23 +449,36 @@
     <div class="step-num">04</div>
     <div class="step-body">
       <div class="step-label">Processing Options</div>
+      <p class="step-explainer">
+        Choose how to convert the SVG into plotter paths, then tune the output.
+        You can re-process with different settings as many times as you like before exporting.
+      </p>
 
       <span class="field-label" style="margin-top:0;">Render mode</span>
-      <div class="radio-group" style="margin-bottom:0.25rem;">
-        <label class="radio-row">
-          <input type="radio" name="renderMode" id="modePathTracing" value="pathTracing" checked>
-          Path Tracing
-        </label>
-        <label class="radio-row">
-          <input type="radio" name="renderMode" id="modeVRV" value="vrv">
-          Vector → Raster → Vector
-        </label>
+      <div class="radio-group" style="margin-bottom: 0.25rem;">
+        <div>
+          <label class="radio-row">
+            <input type="radio" name="renderMode" id="modePathTracing" value="pathTracing" checked>
+            Path Tracing
+          </label>
+          <p class="option-hint">Follows SVG paths directly. Fast and clean. Best for line art.</p>
+        </div>
+        <div>
+          <label class="radio-row">
+            <input type="radio" name="renderMode" id="modeVRV" value="vrv">
+            Vector → Raster → Vector
+          </label>
+          <p class="option-hint">Rasterises first, then re-traces. Preserves varying stroke widths but takes longer.</p>
+        </div>
       </div>
 
       <span class="field-label">
         Infill density <span class="badge-val" id="infillValue">0</span>
       </span>
       <input type="range" min="0" max="4" step="1" id="infillDensity" value="0">
+      <p class="option-hint" style="margin-left:0;">
+        0 = outlines only. Higher values add horizontal fill lines inside closed shapes.
+      </p>
 
       <div id="vrvOptions" style="display:none;">
         <div class="divider"></div>
@@ -456,6 +486,7 @@
           Despeckle <span class="badge-val" id="despeckleValue">2</span>
         </span>
         <input type="range" min="2" max="200" step="11" id="turdSize" value="2">
+        <p class="option-hint" style="margin-left:0;">Removes small noise blobs that appear during rasterisation.</p>
       </div>
 
       <div id="pathTracingOptions">
@@ -463,8 +494,8 @@
         <label class="check-row">
           <input type="checkbox" id="flattenPaths">
           Flatten paths
-          <span style="color:var(--text-2);font-size:0.85em;">(removes overlapping areas)</span>
         </label>
+        <p class="option-hint">Merges overlapping filled areas so the pen doesn't retrace the same region twice.</p>
       </div>
     </div>
   </div>
@@ -474,6 +505,11 @@
     <div class="step-num">05</div>
     <div class="step-body">
       <div class="step-label">Process &amp; Export</div>
+      <p class="step-explainer">
+        Click <strong>Process SVG</strong> to convert your artwork into plotter commands.
+        Processing runs in your browser — it may take 10–60 seconds for complex files.
+        Review the path preview before exporting.
+      </p>
 
       <button class="btn btn-primary btn-block" id="processBtn" disabled>
         <i class="bi-gear"></i> Process SVG
@@ -482,20 +518,29 @@
       <div id="progressWrap" style="display:none;" class="progress-wrap">
         <div class="progress-track">
           <div class="progress-bar progress-bar-striped progress-bar-animated"
-               id="progressBar">Preparing…</div>
+               id="progressBar">Starting…</div>
         </div>
+        <!-- Phase log — each status message appears as a new line -->
+        <div class="phase-log" id="phaseLog"></div>
       </div>
 
-      <img id="resultPreview" style="display:none;">
-      <p class="info-text" id="distanceInfo" style="display:none;"></p>
+      <!-- Result preview — shown after processing completes -->
+      <div id="resultSection" class="result-section" style="display:none;">
+        <div class="result-label">Drawing path preview</div>
+        <img id="resultPreview" alt="Processed drawing path preview">
+        <div class="result-meta" id="resultMeta"></div>
+        <div class="result-confirm">
+          Check that the preview looks right — all paths traced, artwork in the correct position.
+          If something is off, adjust the settings above and click <strong>Process SVG</strong> again.
+        </div>
+      </div>
 
       <button class="btn btn-success btn-block" id="exportBtn" disabled style="margin-top:0.875rem;">
         <i class="bi-download"></i> Export commands file
       </button>
-
       <p class="export-note">
         Save as <code>mural_commands.txt</code>, then use
-        <strong>Import commands</strong> in the MURAL device UI.
+        <strong>Import commands</strong> in the MURAL device UI to upload it to the plotter.
       </p>
     </div>
   </div>
@@ -504,18 +549,17 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// SVG control — inline equivalent of data/www/svgControl.js
+// SVG control
 // ═══════════════════════════════════════════════════════════════════════════
 
-const renderScale       = 2;
-const nudgeByFactor     = 0.025;
-const zoomByFactor      = 0.05;
-const transformGroupID  = 'muralTransformGroup';
+const renderScale      = 2;
+const nudgeByFactor    = 0.025;
+const zoomByFactor     = 0.05;
+const transformGroupID = 'muralTransformGroup';
 
 let affineTransform = [1, 0, 0, 1, 0, 0];
 let rawSvgString    = null;
 let originalSvgDoc  = null;
-let transformedSvg  = null;
 let targetWidth     = 700;
 let targetHeight    = 0;
 
@@ -527,11 +571,12 @@ function applyTransform() {
     if (!originalSvgDoc) return;
     updateTransformText();
     const [cloned] = makeTransformedSvgWithHeight();
-    transformedSvg = cloned;
     const str = new XMLSerializer().serializeToString(cloned);
     document.getElementById('sourceSvgImg').src = 'data:image/svg+xml;base64,' + btoa(str);
 }
 
+// Pure transform — canvas dimensions never change, artwork clips at boundary.
+// Previously the canvas grew when panning down; this version keeps it fixed.
 function makeTransformedSvgWithHeight() {
     const cloned = originalSvgDoc.cloneNode(true);
     const el     = cloned.documentElement;
@@ -539,24 +584,15 @@ function makeTransformedSvgWithHeight() {
     const vbW    = parseFloat(vb[2]);
     const vbH    = parseFloat(vb[3]);
 
-    const scaled = [...affineTransform];
-    scaled[4] = scaled[4] * vbW;
-
-    let newH = parseFloat(el.getAttribute('height'));
-    if (scaled[5] > 0) {
-        const offset = scaled[5] * newH;
-        newH += offset;
-        el.setAttribute('height', newH);
-        scaled[5] = scaled[5] * vbH;
-        vb[3] = String(vbH + scaled[5]);
-        el.setAttribute('viewBox', vb.join(', '));
-    } else {
-        scaled[5] = scaled[5] * vbH;
-    }
+    // Scale translate components into viewBox coordinate space
+    const t = [...affineTransform];
+    t[4] = t[4] * vbW;
+    t[5] = t[5] * vbH;
 
     cloned.getElementById(transformGroupID)
-          .setAttribute('transform', `matrix(${scaled.join(',')})`);
-    return [cloned, newH];
+          .setAttribute('transform', `matrix(${t.join(',')})`);
+
+    return [cloned, parseFloat(el.getAttribute('height'))];
 }
 
 function updateTransformText() {
@@ -599,13 +635,17 @@ function normalizeSvg() {
 
     document.getElementById('canvasHeight').placeholder = Math.round(autoH) + ' (auto)';
 
+    // Fix canvas dimensions; overflow clips automatically
     el.setAttribute('width',  String(targetWidth));
     el.setAttribute('height', String(targetHeight));
+    el.setAttribute('overflow', 'hidden');
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.id = transformGroupID;
     while (el.firstChild) g.appendChild(el.firstChild);
     el.appendChild(g);
+
+    updateCanvasViz();
 }
 
 function setSvgString(svgString) {
@@ -661,8 +701,7 @@ async function getCurrentSvgImageData() {
 
 function convertJsonToDataURL(json, w, h) {
     const canvas = document.createElement('canvas');
-    canvas.width  = w;
-    canvas.height = h;
+    canvas.width  = w; canvas.height = h;
     canvas.style.display = 'none';
     document.body.appendChild(canvas);
     paper.setup(canvas);
@@ -675,14 +714,56 @@ function convertJsonToDataURL(json, w, h) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Canvas proportion visualiser
+// ═══════════════════════════════════════════════════════════════════════════
+
+function updateCanvasViz() {
+    const w = parseInt(document.getElementById('canvasWidth').value)  || 700;
+    const h = parseInt(document.getElementById('canvasHeight').value) || Math.round(targetHeight) || w;
+
+    const maxW = 300, maxH = 160;
+    const aspect = w / h;
+
+    let boxW, boxH;
+    if (aspect >= maxW / maxH) {
+        boxW = maxW; boxH = Math.round(maxW / aspect);
+    } else {
+        boxH = maxH; boxW = Math.round(maxH * aspect);
+    }
+    boxW = Math.max(boxW, 40); boxH = Math.max(boxH, 24);
+
+    const box  = document.getElementById('canvasVizBox');
+    const lbl  = document.getElementById('canvasVizLabel');
+    const hint = document.getElementById('canvasVizHint');
+
+    box.style.width  = boxW + 'px';
+    box.style.height = boxH + 'px';
+
+    lbl.textContent  = `${w} × ${h} mm`;
+    hint.textContent = aspect >= 1
+        ? `Landscape  ·  ${(w/h).toFixed(2)}:1`
+        : `Portrait  ·  1:${(h/w).toFixed(2)}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Worker interaction
 // ═══════════════════════════════════════════════════════════════════════════
 
 let currentWorker     = null;
 let exportCommandsStr = null;
 
+// Appends a new line to the phase log and updates the progress bar text.
+// Each call records a timestamped step so the user can see progress accumulating.
 function setStatus(text) {
     document.getElementById('progressBar').textContent = text;
+
+    const log   = document.getElementById('phaseLog');
+    const entry = document.createElement('div');
+    entry.className = 'phase-entry';
+    entry.innerHTML = `<span class="dot"></span><span>${text}</span>`;
+    log.appendChild(entry);
+    // Keep only the last 6 lines so it doesn't grow indefinitely
+    while (log.children.length > 6) log.removeChild(log.firstChild);
 }
 
 function startProcessing() {
@@ -690,14 +771,14 @@ function startProcessing() {
 
     exportCommandsStr = null;
     document.getElementById('exportBtn').disabled = true;
-    document.getElementById('resultPreview').style.display = 'none';
-    document.getElementById('distanceInfo').style.display = 'none';
-    document.getElementById('progressWrap').style.display = '';
+    document.getElementById('resultSection').style.display = 'none';
+    document.getElementById('progressWrap').style.display  = '';
+    document.getElementById('phaseLog').innerHTML = '';
 
     const bar = document.getElementById('progressBar');
     bar.classList.add('progress-bar-striped', 'progress-bar-animated');
     bar.classList.remove('bg-success');
-    bar.textContent = 'Preparing…';
+    bar.textContent = 'Starting…';
 
     if (currentWorker) { currentWorker.terminate(); currentWorker = null; }
 
@@ -772,22 +853,28 @@ function handleWorkerMessage(e) {
 
         exportCommandsStr = commands.join('\n');
 
+        // Mark progress as done
         const bar = document.getElementById('progressBar');
         bar.classList.remove('progress-bar-striped', 'progress-bar-animated');
         bar.classList.add('bg-success');
         bar.textContent = 'Done!';
 
+        // Mark last phase entry as done
+        const log = document.getElementById('phaseLog');
+        if (log.lastChild) log.lastChild.classList.add('done');
+
+        // Render result preview
         const url = convertJsonToDataURL(svgJson, targetWidth, targetHeight);
         const img = document.getElementById('resultPreview');
         img.src   = url;
-        img.style.display = '';
 
         const totalM = +(distance     / 1000).toFixed(1);
         const drawM  = +(drawDistance / 1000).toFixed(1);
-        const info   = document.getElementById('distanceInfo');
-        info.textContent = `Total travel: ${totalM} m  ·  Draw travel: ${drawM} m`;
-        info.style.display = '';
+        document.getElementById('resultMeta').innerHTML =
+            `<span><i class="bi-arrows-move" style="font-size:.85em;"></i> Total travel: ${totalM} m</span>` +
+            `<span><i class="bi-pen" style="font-size:.85em;"></i> Drawing: ${drawM} m</span>`;
 
+        document.getElementById('resultSection').style.display = '';
         document.getElementById('exportBtn').disabled = false;
     }
 }
@@ -797,10 +884,8 @@ function exportCommands() {
     const blob = new Blob([exportCommandsStr], { type: 'text/plain' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'mural_commands.txt';
-    document.body.appendChild(a);
-    a.click();
+    a.href = url; a.download = 'mural_commands.txt';
+    document.body.appendChild(a); a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
@@ -815,14 +900,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const fileInput = document.getElementById('svgFileInput');
 
     dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', e => {
-        e.preventDefault();
-        dropZone.classList.add('drag-over');
-    });
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
     dropZone.addEventListener('drop', async e => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
+        e.preventDefault(); dropZone.classList.remove('drag-over');
         const file = e.dataTransfer.files[0];
         if (file) await loadFile(file);
     });
@@ -837,8 +918,9 @@ document.addEventListener('DOMContentLoaded', function () {
         setSvgString(text);
     }
 
-    document.getElementById('canvasWidth').addEventListener('change', reNormalize);
+    document.getElementById('canvasWidth').addEventListener('change', () => { reNormalize(); updateCanvasViz(); });
     document.getElementById('canvasHeight').addEventListener('change', function () {
+        updateCanvasViz();
         if (!rawSvgString) return;
         targetHeight = parseInt(this.value) || targetHeight;
         if (originalSvgDoc) {
@@ -847,31 +929,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.getElementById('panUp').addEventListener('click', () => {
-        affineTransform[5] -= nudgeByFactor; applyTransform();
-    });
-    document.getElementById('panDown').addEventListener('click', () => {
-        affineTransform[5] += nudgeByFactor; applyTransform();
-    });
-    document.getElementById('panLeft').addEventListener('click', () => {
-        affineTransform[4] -= nudgeByFactor; applyTransform();
-    });
-    document.getElementById('panRight').addEventListener('click', () => {
-        affineTransform[4] += nudgeByFactor; applyTransform();
-    });
-    document.getElementById('zoomIn').addEventListener('click', () => {
-        affineTransform[0] += zoomByFactor;
-        affineTransform[3] += zoomByFactor;
-        applyTransform();
-    });
-    document.getElementById('zoomOut').addEventListener('click', () => {
-        affineTransform[0] -= zoomByFactor;
-        affineTransform[3] -= zoomByFactor;
-        applyTransform();
-    });
-    document.getElementById('resetTransform').addEventListener('click', () => {
-        resetTransform(); applyTransform();
-    });
+    document.getElementById('panUp').addEventListener('click',    () => { affineTransform[5] -= nudgeByFactor; applyTransform(); });
+    document.getElementById('panDown').addEventListener('click',   () => { affineTransform[5] += nudgeByFactor; applyTransform(); });
+    document.getElementById('panLeft').addEventListener('click',   () => { affineTransform[4] -= nudgeByFactor; applyTransform(); });
+    document.getElementById('panRight').addEventListener('click',  () => { affineTransform[4] += nudgeByFactor; applyTransform(); });
+    document.getElementById('zoomIn').addEventListener('click',    () => { affineTransform[0] += zoomByFactor; affineTransform[3] += zoomByFactor; applyTransform(); });
+    document.getElementById('zoomOut').addEventListener('click',   () => { affineTransform[0] -= zoomByFactor; affineTransform[3] -= zoomByFactor; applyTransform(); });
+    document.getElementById('resetTransform').addEventListener('click', () => { resetTransform(); applyTransform(); });
 
     document.querySelectorAll('input[name="renderMode"]').forEach(r => {
         r.addEventListener('change', function () {
@@ -890,6 +954,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('processBtn').addEventListener('click', startProcessing);
     document.getElementById('exportBtn').addEventListener('click', exportCommands);
+
+    // Initialise canvas viz on load
+    updateCanvasViz();
 });
 </script>
 </body>
