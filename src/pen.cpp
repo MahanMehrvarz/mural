@@ -39,7 +39,7 @@ void doSlowMove(Pen* pen, int startDegree, int targetDegree, int speedDegPerSec)
         currentDegree = startDegree + progressDegrees;
     }
     pen->setRawValue(targetDegree);
-    delay(200);
+    delay(50);
 }
 
 
@@ -66,7 +66,7 @@ void Pen::slowUp() {
         throw std::invalid_argument("not ready");
     }
 
-    doSlowMove(this, currentPosition, 90, slowSpeedDegPerSec);
+    doSlowMove(this, currentPosition, 90, slowUpSpeedDegPerSec);
     currentPosition = 90;
 }
 
@@ -75,7 +75,7 @@ void Pen::slowDown() {
         throw std::invalid_argument("not ready");
     }
 
-    doSlowMove(this, currentPosition, penDistance, slowSpeedDegPerSec);
+    doSlowMove(this, currentPosition, penDistance, slowDownSpeedDegPerSec);
     currentPosition = penDistance;
 }
 

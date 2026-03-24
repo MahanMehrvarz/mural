@@ -345,15 +345,10 @@ function init() {
         $("#chooseRendererSlide").hide();
     });
     
-    $("#acceptSvg").click(function() {
-        if (!uploadConvertedCommands) {
-            throw new Error('Commands are empty');
-        }
-        $("#acceptSvg").attr("disabled", "disabled");
+    function doUpload(commandsText) {
+        uploadConvertedCommands = commandsText;
 
-        const commandsBlob = new Blob([uploadConvertedCommands], {
-            type: "text/plain"
-        });
+        const commandsBlob = new Blob([commandsText], { type: "text/plain" });
 
         $(".muralSlide").hide();
         $("#uploadProgress").show();
@@ -376,20 +371,25 @@ function init() {
             },
             xhr: function () {
                 var xhr = new window.XMLHttpRequest();
-
                 xhr.upload.addEventListener("progress", function (evt) {
                     if (evt.lengthComputable) {
-                        var percentComplete = evt.loaded / evt.total;
-                        percentComplete = parseInt(percentComplete * 100);
+                        var percentComplete = parseInt(evt.loaded / evt.total * 100);
                         $("#uploadProgress").attr("aria-valuemax", evt.total.toString());
                         $("#uploadProgress").attr("aria-valuenow", evt.loaded.toString());
                         $("#uploadProgress > .progress-bar").attr("style", `width: ${percentComplete}%`);
                     }
                 }, false);
-
                 return xhr;
             },
         });
+    }
+
+    $("#acceptSvg").click(function() {
+        if (!uploadConvertedCommands) {
+            throw new Error('Commands are empty');
+        }
+        $("#acceptSvg").attr("disabled", "disabled");
+        doUpload(uploadConvertedCommands);
     });
 
 
@@ -465,6 +465,75 @@ function init() {
     });
 
     svgControl.initSvgControl();
+
+    // ── SVG-select tab switching ──────────────────────────────────────────
+    $("#tab-processSvg").click(function(e) {
+        e.preventDefault();
+        $(this).addClass("active");
+        $("#tab-importCommands").removeClass("active");
+        $("#pane-processSvg").show();
+        $("#pane-importCommands").hide();
+        // Reset import state so a stale file can't be accidentally accepted
+        uploadConvertedCommands = null;
+        $("#importCommandsFile").val("");
+        $("#importPreviewCanvas").hide();
+        $("#importError").hide();
+        $("#importInfo").hide();
+        $("#acceptImportedCommands").attr("disabled", "disabled");
+    });
+
+    $("#tab-importCommands").click(function(e) {
+        e.preventDefault();
+        $(this).addClass("active");
+        $("#tab-processSvg").removeClass("active");
+        $("#pane-processSvg").hide();
+        $("#pane-importCommands").show();
+    });
+
+    // ── Import commands file ──────────────────────────────────────────────
+    let importedCommandsText = null;
+
+    $("#importCommandsFile").change(async function() {
+        importedCommandsText = null;
+        $("#acceptImportedCommands").attr("disabled", "disabled");
+        $("#importPreviewCanvas").hide();
+        $("#importError").hide();
+        $("#importInfo").hide();
+
+        const [file] = this.files;
+        if (!file) return;
+
+        const text = await file.text();
+        const lines = text.split('\n');
+
+        // Validate header
+        if (!lines[0] || !lines[0].startsWith('d') ||
+            !lines[1] || !lines[1].startsWith('h')) {
+            $("#importError").text("Invalid file: missing distance/height header. Was this exported from MURAL Studio?").show();
+            return;
+        }
+
+        importedCommandsText = text;
+
+        // Draw preview on canvas
+        const canvas = $("#importPreviewCanvas")[0];
+        drawCommandsPreview(text, canvas);
+        $("#importPreviewCanvas").show();
+
+        // Show distance info from header
+        const totalMm = parseFloat(lines[0].slice(1));
+        if (!isNaN(totalMm)) {
+            $("#importInfo").text(`Total travel: ${(totalMm / 1000).toFixed(1)} m`).show();
+        }
+
+        $("#acceptImportedCommands").removeAttr("disabled");
+    });
+
+    $("#acceptImportedCommands").click(function() {
+        if (!importedCommandsText) return;
+        $(this).attr("disabled", "disabled");
+        doUpload(importedCommandsText);
+    });
 
     $("#loadingSlide").show();
 
@@ -578,4 +647,57 @@ function getTurdSize() {
 
 function getFlattenPaths() {
     return $("#flattenPathsCheckbox").is(":checked");
+}
+
+function drawCommandsPreview(commandText, canvas) {
+    const lines    = commandText.split('\n');
+    const segments = [];   // [{from:{x,y}, to:{x,y}}]
+    let penDown = false;
+    let prev    = null;
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+
+    for (const raw of lines) {
+        const line = raw.trim();
+        if (!line || line.startsWith('d') || line.startsWith('h')) continue;
+        if (line === 'p1') { penDown = true;  continue; }
+        if (line === 'p0') { penDown = false; prev = null; continue; }
+
+        const parts = line.split(' ');
+        if (parts.length < 2) continue;
+        const x = parseFloat(parts[0]);
+        const y = parseFloat(parts[1]);
+        if (isNaN(x) || isNaN(y)) continue;
+
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+
+        if (penDown && prev) {
+            segments.push({ from: prev, to: { x, y } });
+        }
+        prev = { x, y };
+    }
+
+    if (segments.length === 0) return;
+
+    const pad    = 8;
+    const cw     = canvas.width;
+    const ch     = canvas.height;
+    const rangeX = maxX - minX || 1;
+    const rangeY = maxY - minY || 1;
+    const scale  = Math.min((cw - 2 * pad) / rangeX, (ch - 2 * pad) / rangeY);
+    const ox     = pad + (cw - 2 * pad - rangeX * scale) / 2 - minX * scale;
+    const oy     = pad + (ch - 2 * pad - rangeY * scale) / 2 - minY * scale;
+
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth   = 0.7;
+    ctx.beginPath();
+
+    for (const seg of segments) {
+        ctx.moveTo(seg.from.x * scale + ox, seg.from.y * scale + oy);
+        ctx.lineTo(seg.to.x  * scale + ox, seg.to.y  * scale + oy);
+    }
+    ctx.stroke();
 }

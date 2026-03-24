@@ -40,31 +40,46 @@ Because the body is not perfectly rigid under gravity, it tilts slightly as it m
 
 ## Software Architecture Overview
 
+Two independent paths exist for getting a command file onto the device:
+
 ```
-Browser (User)
+━━━ PATH A — Classic (all-in-one, device must be reachable) ━━━━━━━━━━━━
+
+Browser tab at http://mural.local
 │
-├─ Web UI (HTML/JS served from LittleFS /www/)
-│   └─ Web Worker (compiled TypeScript)
-│       SVG/image → parse → optimize → command file
+├─ Web UI  (HTML/JS served from LittleFS /www/)
+│   └─ Web Worker  (compiled TypeScript — worker.js)
+│       SVG/image → parse → optimise → command file
 │
-└─ HTTP POST /uploadCommands
-        │
-        ▼
-   ESP32 Firmware (Arduino / PlatformIO)
-   ┌─────────────────────────────────────────┐
-   │  main.cpp        (setup + loop)          │
-   │  PhaseManager    (state machine)         │
-   │  AsyncWebServer  (HTTP endpoints)        │
-   │  Runner          (reads /commands file)  │
-   │  Tasks           (atomic operations)     │
-   │  Movement        (kinematics + steppers) │
-   │  Pen             (servo)                 │
-   │  Display         (OLED)                  │
-   └─────────────────────────────────────────┘
-        │
-        ▼
-   TMC2209 drivers → NEMA 17 steppers → belts → pen position
-   MG90s servo → pen up / pen down
+└─ HTTP POST /uploadCommands ──────────────────────────────┐
+                                                           │
+━━━ PATH B — Standalone (laptop-side, device not needed) ━━┿━━━━━━━━━━━
+
+Laptop browser at http://localhost:8090/standalone         │
+│                                                          │
+├─ MURAL Studio  (standalone/index.html)                   │
+│   └─ Web Worker  (same worker.js served by flasher)      │
+│       SVG/image → parse → optimise → command file        │
+│                                                          │
+└─ File download → user transfers file →                   │
+   Device UI import tab → HTTP POST /uploadCommands ───────┘
+                                                           │
+                                                           ▼
+                                              ESP32 Firmware (Arduino / PlatformIO)
+                                              ┌─────────────────────────────────────┐
+                                              │  main.cpp        (setup + loop)      │
+                                              │  PhaseManager    (state machine)     │
+                                              │  AsyncWebServer  (HTTP endpoints)    │
+                                              │  Runner          (reads /commands)   │
+                                              │  Tasks           (atomic operations) │
+                                              │  Movement        (kinematics)        │
+                                              │  Pen             (servo)             │
+                                              │  Display         (OLED)              │
+                                              └─────────────────────────────────────┘
+                                                           │
+                                                           ▼
+                                              TMC2209 → NEMA 17 → belts → pen
+                                              MG90s servo → pen up / pen down
 ```
 
 ---
@@ -246,11 +261,14 @@ SSD1306 OLED over I2C. Two screens:
 
 ---
 
-## SVG Processing Pipeline (Browser-side TypeScript)
+## SVG Processing Pipeline (TypeScript — shared by both UIs)
 
-Located in `tsc/src/`. Built by webpack into a Web Worker (`/data/www/worker/worker.js`) that runs off the main UI thread.
+Located in `tsc/src/`. Built by webpack into a single Web Worker bundle (`worker.js`).
 
-The pipeline converts an uploaded image or SVG into the command file the ESP32 needs.
+- The **device UI** loads it from `/www/worker/worker.js` (LittleFS)
+- **MURAL Studio** loads the same bundle from `/standalone/worker.js` (served by `flasher/serve.py`)
+
+No TypeScript source changes are needed when switching between the two UIs. The pipeline converts an uploaded image or SVG into the command file the ESP32 needs.
 
 ```
 Input: SVG file  ─or─  raster image (PNG/JPEG)
@@ -329,7 +347,14 @@ Optional: `/estepsCalibration` extends a belt 1000 mm so the user can verify the
 The user tests servo angles via `/setServo` to find the angle where the pen just touches the wall surface. `/setPenDistance` locks in that angle and advances to phase 4.
 
 ### Phase 4 — SVG Select (Upload)
-The user uploads an image or SVG in the browser. The Web Worker runs the full processing pipeline (vectorise → parse → scale → infill → optimise → render → measure) and POSTs the resulting command file to `/uploadCommands`. The ESP32 saves it to LittleFS at `/commands` and transitions to phase 5.
+
+Two routes are available via a tab bar in the device UI:
+
+**Tab A — Process SVG (classic path)**
+The user uploads an SVG/image directly in the device browser. The Web Worker runs the full pipeline (vectorise → parse → scale → infill → optimise → render → measure) and POSTs the resulting command file to `/uploadCommands`.
+
+**Tab B — Import commands file (fast path)**
+The user picks a `mural_commands.txt` file previously exported from MURAL Studio on their laptop. The device UI validates the header (`d`/`h` lines), draws a lightweight canvas preview (no Worker needed), then POSTs the file directly to `/uploadCommands`. The ESP32 saves the file to LittleFS at `/commands` and transitions to phase 5.
 
 ### Phase 5 — Begin Drawing
 The user clicks "Run". The firmware:
@@ -344,6 +369,40 @@ The user clicks "Run". The firmware:
    - If `p1`/`p0`: create `PenTask` → slowly move servo to down/up angle
    - Track progress, update OLED
 4. When file is exhausted, auto-restart ESP32
+
+---
+
+## MURAL Studio — Standalone Laptop Processor
+
+**File:** `standalone/index.html`
+**Served by:** `flasher/serve.py` at `http://localhost:<port>/standalone`
+
+MURAL Studio is a self-contained web app that runs the full SVG processing pipeline on the laptop, completely independent of the ESP32. It is useful when:
+- The ESP32 is not yet set up or not on the network
+- Processing a complex SVG that would be slow to run in the device browser
+- Preparing multiple files in batch before a drawing session
+
+**UI sections:**
+
+| Section | Purpose |
+|---|---|
+| Upload SVG | File picker + drag-and-drop; supports `.svg` files |
+| Canvas Size | Width (mm) input; height auto-computed from SVG aspect ratio, overridable |
+| Position & Zoom | D-pad and zoom controls; same affine-transform logic as device UI |
+| Processing Options | Render mode (Path Tracing / Vector→Raster→Vector), infill density, flatten paths, despeckle |
+| Process & Export | Runs the Web Worker; shows result preview and travel distances; downloads `mural_commands.txt` |
+
+**Key parameters:**
+- `homeX` defaults to `canvasWidth / 2`, `homeY` to `0` — the path optimiser starts from the top-centre of the canvas, matching the device's home position
+- `canvasWidth` should match the device's safe drawing width (`safeWidth` from `/getState`), which is approximately 60% of the pin-to-pin distance
+
+**Starting MURAL Studio:**
+```bash
+python3 flasher/serve.py --port 8090
+# then open http://localhost:8090/standalone
+```
+
+The worker bundle must already be compiled (`npm run build` in `tsc/`, or run `pio run` once).
 
 ---
 
@@ -429,9 +488,11 @@ After building, LittleFS image is flashed separately (`pio run --target uploadfs
 
 | Metric | Value |
 |---|---|
-| Drawing speed | 500 steps/sec ≈ 6.2 mm/sec |
+| Drawing speed | 800 steps/sec ≈ 10 mm/sec |
 | Rapid travel speed | 1500 steps/sec ≈ 18.7 mm/sec |
 | Position resolution | ~0.012 mm/step |
-| Servo slew rate | 90°/sec |
+| Servo slew rate (pen down) | 90°/sec |
+| Servo slew rate (pen up) | 270°/sec |
+| Servo settle delay | 50 ms |
 | Kinematic iterations | typically 1–3 (max 20) per waypoint |
-| Interpolation step | 1 mm per kinematic call |
+| Interpolation step | 3 mm per kinematic call |

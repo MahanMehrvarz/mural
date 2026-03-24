@@ -367,14 +367,6 @@ float Movement::beginLinearTravel(double x, double y, int speed)
     auto leftLegSteps = lengths.left;
     auto rightLegSteps = lengths.right;
 
-    extern void addLog(const String& msg);
-    addLog(String("beginLinearTravel: x=") + String(x) + " y=" + String(y) +
-           " leftSteps=" + String(leftLegSteps) + " rightSteps=" + String(rightLegSteps) +
-           " leftNow=" + String(leftMotor->currentPosition()) +
-           " rightNow=" + String(rightMotor->currentPosition()) +
-           " leftMM=" + String(leftLegSteps / stepsPerRotation * circumference) +
-           " rightMM=" + String(rightLegSteps / stepsPerRotation * circumference));
-
     auto deltaLeft = int(abs(abs(leftMotor->currentPosition()) - leftLegSteps));
     auto deltaRight = int(abs(abs(rightMotor->currentPosition()) - rightLegSteps));
 

@@ -127,6 +127,14 @@ class FlasherHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self.send_error(404, f"Binary not found: {fname}")
 
+        elif self.path in ("/standalone", "/standalone/"):
+            self._serve_file(PROJECT_ROOT / "standalone" / "index.html",
+                             "text/html; charset=utf-8")
+
+        elif self.path == "/standalone/worker.js":
+            self._serve_file(PROJECT_ROOT / "data" / "www" / "worker" / "worker.js",
+                             "application/javascript")
+
         else:
             self.send_error(404)
 
@@ -232,7 +240,8 @@ def main():
             print("       ESP32 framework; it will be cached in ~/.platformio/packages/.")
 
     url = f"http://localhost:{args.port}"
-    print(f"\n  Flasher ready → {url}")
+    print(f"\n  Flasher ready     → {url}")
+    print(f"  MURAL Studio      → {url}/standalone")
     print("  Press Ctrl+C to stop.\n")
 
     Timer(1.2, lambda: webbrowser.open(url)).start()

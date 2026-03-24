@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MURAL Studio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
+  <style>
+    body { background: #f8f9fa; }
+    .card { margin-bottom: 1rem; }
+    #sourceSvgImg {
+      width: 100%; max-height: 260px; object-fit: contain;
+      background: #fff; border: 1px solid #dee2e6; border-radius: 4px;
+    }
+    #resultPreview {
+      width: 100%; max-height: 260px; object-fit: contain;
+      background: #fff; border: 1px solid #dee2e6; border-radius: 4px;
+    }
+    .dpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(3, 44px);
+      gap: 3px;
+      margin: 0 auto;
+      width: fit-content;
+    }
+    .dpad-grid .btn { padding: 0; width: 44px; height: 44px; font-size: 1.1rem; }
+    .dpad-grid .empty { background: transparent; pointer-events: none; }
+    #dropZone {
+      border: 2px dashed #adb5bd; border-radius: 6px;
+      padding: 24px; text-align: center; color: #6c757d;
+      cursor: pointer; transition: border-color .2s, background .2s;
+    }
+    #dropZone.drag-over { border-color: #0d6efd; background: #e7f1ff; }
+    #dropZone.has-file  { border-color: #198754; color: #198754; }
+  </style>
+</head>
+<body>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa"
+  crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.17/paper-full.min.js"
+  integrity="sha512-NApOOz1j2Dz1PKsIvg1hrXLzDFd62+J0qOPIhm8wueAnk4fQdSclq6XvfzvejDs6zibSoDC+ipl1dC66m+EoSQ=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<div class="container py-4" style="max-width: 660px;">
+  <h2 class="mb-1">MURAL Studio</h2>
+  <p class="text-muted mb-4">Offline SVG processor — run anywhere, export to the device.</p>
+
+  <!-- ── 1. Upload ─────────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-header fw-semibold">1 · Upload SVG</div>
+    <div class="card-body">
+      <div id="dropZone">
+        <i class="bi-file-earmark-image fs-2 d-block mb-1"></i>
+        <span id="dropLabel">Drop an SVG here, or click to browse</span>
+        <input type="file" id="svgFileInput" accept=".svg" style="display:none;">
+      </div>
+      <img id="sourceSvgImg" class="mt-2" style="display:none;">
+    </div>
+  </div>
+
+  <!-- ── 2. Canvas size ────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-header fw-semibold">2 · Canvas Size</div>
+    <div class="card-body">
+      <div class="row g-3 align-items-center mb-2">
+        <div class="col-auto"><label class="col-form-label" for="canvasWidth">Width (mm)</label></div>
+        <div class="col-3">
+          <input type="number" class="form-control" id="canvasWidth" value="700" min="100" max="4000">
+        </div>
+        <div class="col-auto"><label class="col-form-label" for="canvasHeight">Height (mm)</label></div>
+        <div class="col-3">
+          <input type="number" class="form-control" id="canvasHeight" placeholder="auto" min="100" max="4000">
+        </div>
+      </div>
+      <small class="text-muted">Tip: canvas width ≈ 60 % of your pin-to-pin wall distance.</small>
+    </div>
+  </div>
+
+  <!-- ── 3. Position ───────────────────────────────────────────────────── -->
+  <div class="card" id="positionCard" style="display:none;">
+    <div class="card-header fw-semibold">3 · Position &amp; Zoom</div>
+    <div class="card-body text-center">
+      <div class="dpad-grid mb-2">
+        <div class="empty"></div>
+        <button class="btn btn-outline-secondary" id="panUp"><i class="bi-arrow-up"></i></button>
+        <div class="empty"></div>
+        <button class="btn btn-outline-secondary" id="panLeft"><i class="bi-arrow-left"></i></button>
+        <div class="empty"></div>
+        <button class="btn btn-outline-secondary" id="panRight"><i class="bi-arrow-right"></i></button>
+        <div class="empty"></div>
+        <button class="btn btn-outline-secondary" id="panDown"><i class="bi-arrow-down"></i></button>
+        <div class="empty"></div>
+      </div>
+      <div class="btn-group mb-2">
+        <button class="btn btn-outline-secondary btn-sm" id="zoomIn"><i class="bi-zoom-in"></i> In</button>
+        <button class="btn btn-outline-secondary btn-sm" id="zoomOut"><i class="bi-zoom-out"></i> Out</button>
+        <button class="btn btn-outline-secondary btn-sm" id="resetTransform"><i class="bi-arrow-counterclockwise"></i> Reset</button>
+      </div>
+      <div><small class="text-muted" id="transformText"></small></div>
+    </div>
+  </div>
+
+  <!-- ── 4. Options ───────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-header fw-semibold">4 · Processing Options</div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Render mode</label><br>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="renderMode" id="modePathTracing" value="pathTracing" checked>
+          <label class="form-check-label" for="modePathTracing">Path Tracing</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="renderMode" id="modeVRV" value="vrv">
+          <label class="form-check-label" for="modeVRV">Vector → Raster → Vector</label>
+        </div>
+      </div>
+      <label class="form-label mb-0">Infill density &nbsp;<span class="badge bg-secondary" id="infillValue">0</span></label>
+      <input type="range" class="form-range mb-3" min="0" max="4" step="1" id="infillDensity" value="0">
+      <div id="vrvOptions" style="display:none;">
+        <label class="form-label mb-0">Despeckle &nbsp;<span class="badge bg-secondary" id="despeckleValue">2</span></label>
+        <input type="range" class="form-range mb-3" min="2" max="200" step="11" id="turdSize" value="2">
+      </div>
+      <div id="pathTracingOptions">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="flattenPaths">
+          <label class="form-check-label" for="flattenPaths">Flatten paths (removes overlapping areas)</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 5. Process & Export ──────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-header fw-semibold">5 · Process &amp; Export</div>
+    <div class="card-body">
+      <button class="w-100 btn btn-primary mb-2" id="processBtn" disabled>
+        <i class="bi-gear"></i> Process SVG
+      </button>
+      <div id="progressWrap" style="display:none;" class="mb-2">
+        <div class="progress" style="height:22px;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated"
+               id="progressBar" style="width:100%;">Preparing…</div>
+        </div>
+      </div>
+      <img id="resultPreview" style="display:none;" class="mb-2">
+      <p class="text-muted small mb-2" id="distanceInfo" style="display:none;"></p>
+      <button class="w-100 btn btn-success mb-2" id="exportBtn" disabled>
+        <i class="bi-download"></i> Export commands file
+      </button>
+      <small class="text-muted">
+        Save as <code>mural_commands.txt</code>, then use
+        <strong>Import commands</strong> in the MURAL device UI.
+      </small>
+    </div>
+  </div>
+</div><!-- /container -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// SVG control — inline equivalent of data/www/svgControl.js
+// ═══════════════════════════════════════════════════════════════════════════
+
+const renderScale       = 2;
+const nudgeByFactor     = 0.025;
+const zoomByFactor      = 0.05;
+const transformGroupID  = 'muralTransformGroup';
+
+let affineTransform = [1, 0, 0, 1, 0, 0];
+let rawSvgString    = null;
+let originalSvgDoc  = null;
+let transformedSvg  = null;
+let targetWidth     = 700;
+let targetHeight    = 0;
+
+function resetTransform() {
+    affineTransform = [1, 0, 0, 1, 0, 0];
+}
+
+function applyTransform() {
+    if (!originalSvgDoc) return;
+    updateTransformText();
+    const [cloned] = makeTransformedSvgWithHeight();
+    transformedSvg = cloned;
+    const str = new XMLSerializer().serializeToString(cloned);
+    document.getElementById('sourceSvgImg').src = 'data:image/svg+xml;base64,' + btoa(str);
+}
+
+function makeTransformedSvgWithHeight() {
+    const cloned = originalSvgDoc.cloneNode(true);
+    const el     = cloned.documentElement;
+    const vb     = el.getAttribute('viewBox').split(/[\s,]+/).filter(Boolean);
+    const vbW    = parseFloat(vb[2]);
+    const vbH    = parseFloat(vb[3]);
+
+    const scaled = [...affineTransform];
+    scaled[4] = scaled[4] * vbW;
+
+    let newH = parseFloat(el.getAttribute('height'));
+    if (scaled[5] > 0) {
+        const offset = scaled[5] * newH;
+        newH += offset;
+        el.setAttribute('height', newH);
+        scaled[5] = scaled[5] * vbH;
+        vb[3] = String(vbH + scaled[5]);
+        el.setAttribute('viewBox', vb.join(', '));
+    } else {
+        scaled[5] = scaled[5] * vbH;
+    }
+
+    cloned.getElementById(transformGroupID)
+          .setAttribute('transform', `matrix(${scaled.join(',')})`);
+    return [cloned, newH];
+}
+
+function updateTransformText() {
+    const n = v => +v.toFixed(2);
+    document.getElementById('transformText').textContent =
+        `offset (${n(affineTransform[4]*100)}, ${n(affineTransform[5]*100)})  ` +
+        `zoom ${n(affineTransform[0])}×`;
+}
+
+function convertUnitsToPx(dim) {
+    const factors = { pt:1.3333, pc:16, in:96, cm:37.795, mm:3.7795, px:1 };
+    const m = String(dim).match(/([\d.]+)([a-z%]*)/i);
+    if (!m) throw new Error('Bad SVG dimension: ' + dim);
+    return parseFloat(m[1]) * (factors[m[2]] || 1);
+}
+
+function normalizeSvg() {
+    const el = originalSvgDoc.documentElement;
+    let intrW, intrH;
+
+    if (el.hasAttribute('width') && el.hasAttribute('height')) {
+        intrW = convertUnitsToPx(el.getAttribute('width'));
+        intrH = convertUnitsToPx(el.getAttribute('height'));
+    }
+    if (el.hasAttribute('viewBox')) {
+        if (!intrW || !intrH) {
+            const vb = el.getAttribute('viewBox').split(/[\s,]+/).filter(Boolean);
+            intrW = parseFloat(vb[2]);
+            intrH = parseFloat(vb[3]);
+        }
+    } else {
+        el.setAttribute('viewBox', `0,0,${intrW},${intrH}`);
+    }
+    if (!intrW || !intrH) throw new Error('Cannot determine SVG dimensions');
+
+    targetWidth  = parseInt(document.getElementById('canvasWidth').value) || 700;
+    const autoH  = targetWidth / intrW * intrH;
+    const manualH = parseInt(document.getElementById('canvasHeight').value);
+    targetHeight = (manualH && !isNaN(manualH)) ? manualH : autoH;
+
+    document.getElementById('canvasHeight').placeholder = Math.round(autoH) + ' (auto)';
+
+    el.setAttribute('width',  String(targetWidth));
+    el.setAttribute('height', String(targetHeight));
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.id = transformGroupID;
+    while (el.firstChild) g.appendChild(el.firstChild);
+    el.appendChild(g);
+}
+
+function setSvgString(svgString) {
+    resetTransform();
+    rawSvgString   = svgString;
+    originalSvgDoc = new DOMParser().parseFromString(svgString, 'image/svg+xml');
+    normalizeSvg();
+    applyTransform();
+    document.getElementById('sourceSvgImg').style.display = '';
+    document.getElementById('positionCard').style.display = '';
+    document.getElementById('processBtn').disabled = false;
+}
+
+function reNormalize() {
+    if (!rawSvgString) return;
+    originalSvgDoc = new DOMParser().parseFromString(rawSvgString, 'image/svg+xml');
+    normalizeSvg();
+    resetTransform();
+    applyTransform();
+}
+
+function getRenderSvg() {
+    return makeTransformedSvgWithHeight()[0];
+}
+
+function getSvgJson(svgStringOrDom) {
+    const str = (typeof svgStringOrDom === 'string')
+        ? svgStringOrDom
+        : new XMLSerializer().serializeToString(svgStringOrDom);
+    const size = new paper.Size(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+    paper.setup(size);
+    const svg  = paper.project.importSVG(str, { expandShapes: true, applyMatrix: true });
+    const json = svg.exportJSON();
+    paper.project.remove();
+    return json;
+}
+
+async function getCurrentSvgImageData() {
+    const [cloned] = makeTransformedSvgWithHeight();
+    const str = new XMLSerializer().serializeToString(cloned);
+    const w   = targetWidth  * renderScale;
+    const h   = targetHeight * renderScale;
+    const canvas = new OffscreenCanvas(w, h);
+    const ctx    = canvas.getContext('2d');
+    const img    = await new Promise((res, rej) => {
+        const i = new Image(); i.onload = () => res(i); i.onerror = rej;
+        i.src = 'data:image/svg+xml;base64,' + btoa(str);
+    });
+    const bmp = await createImageBitmap(img, { resizeWidth: w, resizeHeight: h });
+    ctx.drawImage(bmp, 0, 0, w, h);
+    return ctx.getImageData(0, 0, w, h);
+}
+
+function convertJsonToDataURL(json, w, h) {
+    const canvas = document.createElement('canvas');
+    canvas.width  = w;
+    canvas.height = h;
+    canvas.style.display = 'none';
+    document.body.appendChild(canvas);
+    paper.setup(canvas);
+    paper.project.importJSON(json);
+    paper.view.draw();
+    const url = canvas.toDataURL();
+    paper.project.remove();
+    document.body.removeChild(canvas);
+    return url;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Worker interaction
+// ═══════════════════════════════════════════════════════════════════════════
+
+let currentWorker     = null;
+let exportCommandsStr = null;
+
+function setStatus(text) {
+    document.getElementById('progressBar').textContent = text;
+}
+
+function startProcessing() {
+    if (!originalSvgDoc) return;
+
+    exportCommandsStr = null;
+    document.getElementById('exportBtn').disabled = true;
+    document.getElementById('resultPreview').style.display = 'none';
+    document.getElementById('distanceInfo').style.display = 'none';
+    document.getElementById('progressWrap').style.display = '';
+
+    const bar = document.getElementById('progressBar');
+    bar.classList.add('progress-bar-striped', 'progress-bar-animated');
+    bar.classList.remove('bg-success');
+    bar.textContent = 'Preparing…';
+
+    if (currentWorker) { currentWorker.terminate(); currentWorker = null; }
+
+    const mode = document.querySelector('input[name="renderMode"]:checked').value;
+    if (mode === 'vrv') {
+        processVRV();
+    } else {
+        processPathTracing();
+    }
+}
+
+function processPathTracing() {
+    setStatus('Importing SVG…');
+    currentWorker = new Worker('./worker.js');
+
+    const renderSvg = getRenderSvg();
+    const svgString = new XMLSerializer().serializeToString(renderSvg);
+    const svgJson   = getSvgJson(svgString);
+
+    currentWorker.onmessage = handleWorkerMessage;
+    currentWorker.postMessage({
+        type:          'renderSvg',
+        svgJson,
+        width:         targetWidth,
+        height:        targetHeight,
+        svgWidth:      targetWidth,
+        svgHeight:     targetHeight,
+        homeX:         targetWidth  / 2,
+        homeY:         0,
+        infillDensity: parseInt(document.getElementById('infillDensity').value),
+        flattenPaths:  document.getElementById('flattenPaths').checked,
+    });
+}
+
+async function processVRV() {
+    setStatus('Rasterizing…');
+    currentWorker = new Worker('./worker.js');
+
+    const raster   = await getCurrentSvgImageData();
+    const turdSize = parseInt(document.getElementById('turdSize').value);
+
+    currentWorker.onmessage = function (e) {
+        if (e.data.type === 'status') {
+            setStatus(e.data.payload);
+        } else if (e.data.type === 'vectorizer') {
+            const vSvgStr = e.data.payload.svg;
+            const svgJson = getSvgJson(vSvgStr);
+            currentWorker.onmessage = handleWorkerMessage;
+            currentWorker.postMessage({
+                type:          'renderSvg',
+                svgJson,
+                width:         targetWidth,
+                height:        targetHeight,
+                svgWidth:      targetWidth  * renderScale,
+                svgHeight:     targetHeight * renderScale,
+                homeX:         targetWidth  / 2,
+                homeY:         0,
+                infillDensity: parseInt(document.getElementById('infillDensity').value),
+                flattenPaths:  false,
+            });
+        }
+    };
+
+    currentWorker.postMessage({ type: 'vectorize', raster, turdSize });
+}
+
+function handleWorkerMessage(e) {
+    if (e.data.type === 'status') {
+        setStatus(e.data.payload);
+    } else if (e.data.type === 'renderer') {
+        const { commands, svgJson, distance, drawDistance } = e.data.payload;
+
+        exportCommandsStr = commands.join('\n');
+
+        const bar = document.getElementById('progressBar');
+        bar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+        bar.classList.add('bg-success');
+        bar.textContent = 'Done!';
+
+        const url = convertJsonToDataURL(svgJson, targetWidth, targetHeight);
+        const img = document.getElementById('resultPreview');
+        img.src   = url;
+        img.style.display = '';
+
+        const totalM = +(distance     / 1000).toFixed(1);
+        const drawM  = +(drawDistance / 1000).toFixed(1);
+        const info   = document.getElementById('distanceInfo');
+        info.textContent = `Total travel: ${totalM} m  ·  Draw travel: ${drawM} m`;
+        info.style.display = '';
+
+        document.getElementById('exportBtn').disabled = false;
+    }
+}
+
+function exportCommands() {
+    if (!exportCommandsStr) return;
+    const blob = new Blob([exportCommandsStr], { type: 'text/plain' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'mural_commands.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Event wiring
+// ═══════════════════════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const dropZone  = document.getElementById('dropZone');
+    const fileInput = document.getElementById('svgFileInput');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', async e => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) await loadFile(file);
+    });
+    fileInput.addEventListener('change', async function () {
+        if (this.files[0]) await loadFile(this.files[0]);
+    });
+
+    async function loadFile(file) {
+        const text = await file.text();
+        dropZone.classList.add('has-file');
+        document.getElementById('dropLabel').textContent = file.name;
+        setSvgString(text);
+    }
+
+    document.getElementById('canvasWidth').addEventListener('change', reNormalize);
+    document.getElementById('canvasHeight').addEventListener('change', function () {
+        if (!rawSvgString) return;
+        targetHeight = parseInt(this.value) || targetHeight;
+        if (originalSvgDoc) {
+            originalSvgDoc.documentElement.setAttribute('height', String(targetHeight));
+            applyTransform();
+        }
+    });
+
+    document.getElementById('panUp').addEventListener('click', () => {
+        affineTransform[5] -= nudgeByFactor; applyTransform();
+    });
+    document.getElementById('panDown').addEventListener('click', () => {
+        affineTransform[5] += nudgeByFactor; applyTransform();
+    });
+    document.getElementById('panLeft').addEventListener('click', () => {
+        affineTransform[4] -= nudgeByFactor; applyTransform();
+    });
+    document.getElementById('panRight').addEventListener('click', () => {
+        affineTransform[4] += nudgeByFactor; applyTransform();
+    });
+    document.getElementById('zoomIn').addEventListener('click', () => {
+        affineTransform[0] += zoomByFactor;
+        affineTransform[3] += zoomByFactor;
+        applyTransform();
+    });
+    document.getElementById('zoomOut').addEventListener('click', () => {
+        affineTransform[0] -= zoomByFactor;
+        affineTransform[3] -= zoomByFactor;
+        applyTransform();
+    });
+    document.getElementById('resetTransform').addEventListener('click', () => {
+        resetTransform(); applyTransform();
+    });
+
+    document.querySelectorAll('input[name="renderMode"]').forEach(r => {
+        r.addEventListener('change', function () {
+            const isVRV = this.value === 'vrv';
+            document.getElementById('vrvOptions').style.display        = isVRV ? '' : 'none';
+            document.getElementById('pathTracingOptions').style.display = isVRV ? 'none' : '';
+        });
+    });
+
+    document.getElementById('infillDensity').addEventListener('input', function () {
+        document.getElementById('infillValue').textContent = this.value;
+    });
+    document.getElementById('turdSize').addEventListener('input', function () {
+        document.getElementById('despeckleValue').textContent = this.value;
+    });
+
+    document.getElementById('processBtn').addEventListener('click', startProcessing);
+    document.getElementById('exportBtn').addEventListener('click', exportCommands);
+});
+</script>
+</body>
+</html>

@@ -119,32 +119,57 @@
       </div>
       <div id="svgUploadSlide" class="muralSlide" style="display:none;">
         <h3 class="mb-2 fw-normal">Select SVG Image</h3>
-        <h6 class="mb-2"><small class="text-muted">Use black and white line art SVGs for now</small></h6>
-        <img id="sourceSvg" class="img-thumbnail mb-2 svg-control" style="display:none;width:100%;">
-        <div class="container svg-control mb-2" style="display: none;">
-          <div class="row">
-            <div class="col-10 align-self-center">
-              <div class="set blue">
-                <nav class="d-pad">
-                  <a class="up" href="#"></a>
-                  <a class="right" href="#"></a>
-                  <a class="down" href="#"></a>
-                  <a class="left" href="#"></a>  
-                </nav>
+        <!-- Tab bar -->
+        <ul class="nav nav-tabs mb-3">
+          <li class="nav-item">
+            <a class="nav-link active" id="tab-processSvg" href="#">Process SVG</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="tab-importCommands" href="#">Import commands file</a>
+          </li>
+        </ul>
+
+        <!-- Pane A: existing SVG processing flow -->
+        <div id="pane-processSvg">
+          <h6 class="mb-2"><small class="text-muted">Use black and white line art SVGs for now</small></h6>
+          <img id="sourceSvg" class="img-thumbnail mb-2 svg-control" style="display:none;width:100%;">
+          <div class="container svg-control mb-2" style="display: none;">
+            <div class="row">
+              <div class="col-10 align-self-center">
+                <div class="set blue">
+                  <nav class="d-pad">
+                    <a class="up" href="#"></a>
+                    <a class="right" href="#"></a>
+                    <a class="down" href="#"></a>
+                    <a class="left" href="#"></a>
+                  </nav>
+                </div>
+              </div>
+              <div class="col-2 align-self-center">
+                <button type="button" class="btn btn-primary mb-2" id="zoomIn"><i class="bi-zoom-in fs-2"></i></button>
+                <button type="button" class="btn btn-primary mb-2" id="zoomOut"><i class="bi-zoom-out fs-2"></i></button>
+                <button type="button" class="btn btn-primary" id="resetTransform"><i class="bi-arrow-counterclockwise fs-2"></i></button>
               </div>
             </div>
-            <div class="col-2 align-self-center">
-              <button type="button" class="btn btn-primary mb-2" id="zoomIn"><i class="bi-zoom-in fs-2"></i></button>
-              <button type="button" class="btn btn-primary mb-2" id="zoomOut"><i class="bi-zoom-out fs-2"></i></button>
-              <button type="button" class="btn btn-primary" id="resetTransform"><i class="bi-arrow-counterclockwise fs-2"></i></button>
+            <div class="row">
+              <h6><small class="text-muted" id="transformText"></small></h6>
             </div>
           </div>
-          <div class="row">
-            <h6><small class="text-muted" id="transformText"></small></h6>
-          </div>
+          <input class="form-control form-control-lg mb-2" id="uploadSvg" type="file" accept=".svg">
+          <button class="w-100 btn btn-lg btn-primary mb-6" id="preview" disabled>Preview drawing</button>
         </div>
-        <input class="form-control form-control-lg mb-2" id="uploadSvg" type="file" accept=".svg">
-        <button class="w-100 btn btn-lg btn-primary mb-6" id="preview" disabled>Preview drawing</button>
+
+        <!-- Pane B: import pre-processed commands file -->
+        <div id="pane-importCommands" style="display:none;">
+          <h6 class="mb-3"><small class="text-muted">Select a <code>mural_commands.txt</code> exported from MURAL Studio on your laptop.</small></h6>
+          <input class="form-control form-control-lg mb-3" id="importCommandsFile" type="file">
+          <canvas id="importPreviewCanvas" width="400" height="200"
+            style="width:100%;height:200px;background:#fff;border:1px solid #dee2e6;border-radius:4px;display:none;"
+            class="mb-2"></canvas>
+          <p class="text-danger small mb-2" id="importError" style="display:none;"></p>
+          <p class="text-muted small mb-2" id="importInfo" style="display:none;"></p>
+          <button class="w-100 btn btn-lg btn-primary mb-2" id="acceptImportedCommands" disabled>Accept</button>
+        </div>
       </div>
       <div id="chooseRendererSlide" class="muralSlide" style="display:none;">
         <h3 class="mb-2 fw-normal">Choose render type</h3>
