@@ -110,19 +110,7 @@
     .drop-icon { font-size: 1.75rem; display: block; margin-bottom: 0.4rem; opacity: 0.4; transition: opacity .2s; }
     #dropZone.has-file .drop-icon { opacity: 0.9; }
 
-    /* ── Preview images ────────────────────────────────────────────── */
-    #sourceSvgImg {
-      display: block;
-      width: 100%; max-height: 260px;
-      object-fit: contain;
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: calc(var(--r) - 1px);
-      margin-top: 0.75rem;
-      overflow: hidden;
-    }
-
-    /* ── Canvas size viz ───────────────────────────────────────────── */
+    /* ── Canvas size viz + live artwork preview ─────────────────────── */
     .canvas-inputs-row {
       display: flex; flex-wrap: wrap;
       align-items: center; gap: 0.5rem 0.875rem;
@@ -145,27 +133,47 @@
     }
     input[type="number"]:focus { border-color: var(--accent); }
 
-    /* Canvas proportion visualiser */
+    /* The "wall" area surrounding the canvas frame */
     .canvas-viz-wrap {
-      background: var(--bg);
+      background: oklch(88% 0.015 72);
       border: 1px solid var(--border);
       border-radius: calc(var(--r) - 1px);
-      padding: 1rem;
+      padding: 1.25rem;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
       min-height: 80px;
     }
+
+    /* The canvas frame — JS sets width & height; artwork img fills it */
     #canvasVizBox {
       border: 2px solid var(--accent);
       border-radius: 2px;
       background: white;
       position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      overflow: hidden;           /* clips artwork outside canvas boundary */
+      box-shadow: 0 3px 14px rgba(0,0,0,0.18);
       transition: width .25s, height .25s;
       max-width: 100%;
+    }
+
+    /* Artwork preview — fills canvas frame exactly */
+    #canvasPreviewImg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Shown when no SVG is loaded yet */
+    #canvasEmptyState {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      gap: 0.3rem;
     }
     #canvasVizLabel {
       font-family: var(--ff-head);
@@ -174,10 +182,14 @@
       color: var(--text-2);
       white-space: nowrap;
     }
+    .canvas-upload-cue {
+      font-size: 0.7rem;
+      color: oklch(65% 0.015 72);
+    }
     .canvas-viz-hint {
       font-size: 0.75rem;
-      color: var(--text-2);
-      margin-top: 0.5rem;
+      color: oklch(55% 0.015 72);
+      margin-top: 0.625rem;
       text-align: center;
     }
 
@@ -380,7 +392,6 @@
         <span id="dropLabel">Drop an SVG here, or click to browse</span>
         <input type="file" id="svgFileInput" accept=".svg" style="display:none;">
       </div>
-      <img id="sourceSvgImg" style="display:none;">
     </div>
   </div>
 
@@ -401,14 +412,18 @@
         <label for="canvasHeight">Height (mm)</label>
         <input type="number" id="canvasHeight" placeholder="auto" min="100" max="4000">
       </div>
-      <!-- Live proportion visualiser -->
+      <!-- Live canvas preview — artwork appears here once uploaded -->
       <div class="canvas-viz-wrap">
-        <div>
-          <div id="canvasVizBox">
-            <span id="canvasVizLabel">700 mm wide</span>
+        <div id="canvasVizBox">
+          <!-- Artwork fills this frame; clips at boundary -->
+          <img id="canvasPreviewImg" style="display:none;" alt="Canvas preview">
+          <!-- Placeholder shown before any SVG is loaded -->
+          <div id="canvasEmptyState">
+            <span id="canvasVizLabel">700 × auto mm</span>
+            <span class="canvas-upload-cue">Upload an SVG to preview it here</span>
           </div>
-          <p class="canvas-viz-hint" id="canvasVizHint">Aspect ratio preview</p>
         </div>
+        <p class="canvas-viz-hint" id="canvasVizHint">Landscape · 1:1</p>
       </div>
     </div>
   </div>
@@ -567,30 +582,36 @@ function resetTransform() {
     affineTransform = [1, 0, 0, 1, 0, 0];
 }
 
+// btoa only handles Latin-1; encode as UTF-8 first to support any SVG content
+function svgToDataURL(str) {
+    return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(str)));
+}
+
 function applyTransform() {
     if (!originalSvgDoc) return;
     updateTransformText();
     const [cloned] = makeTransformedSvgWithHeight();
     const str = new XMLSerializer().serializeToString(cloned);
-    document.getElementById('sourceSvgImg').src = 'data:image/svg+xml;base64,' + btoa(str);
+    document.getElementById('canvasPreviewImg').src = svgToDataURL(str);
 }
 
 // Pure transform — canvas dimensions never change, artwork clips at boundary.
-// Previously the canvas grew when panning down; this version keeps it fixed.
 function makeTransformedSvgWithHeight() {
     const cloned = originalSvgDoc.cloneNode(true);
     const el     = cloned.documentElement;
-    const vb     = el.getAttribute('viewBox').split(/[\s,]+/).filter(Boolean);
-    const vbW    = parseFloat(vb[2]);
-    const vbH    = parseFloat(vb[3]);
+    const vbAttr = el.getAttribute('viewBox');
+    if (!vbAttr) throw new Error('SVG is missing a viewBox — cannot transform.');
+    const vb  = vbAttr.split(/[\s,]+/).filter(Boolean);
+    const vbW = parseFloat(vb[2]);
+    const vbH = parseFloat(vb[3]);
 
-    // Scale translate components into viewBox coordinate space
     const t = [...affineTransform];
     t[4] = t[4] * vbW;
     t[5] = t[5] * vbH;
 
-    cloned.getElementById(transformGroupID)
-          .setAttribute('transform', `matrix(${t.join(',')})`);
+    const group = cloned.getElementById(transformGroupID);
+    if (!group) throw new Error('Transform group not found — was normalizeSvg() called?');
+    group.setAttribute('transform', `matrix(${t.join(',')})`);
 
     return [cloned, parseFloat(el.getAttribute('height'))];
 }
@@ -651,10 +672,17 @@ function normalizeSvg() {
 function setSvgString(svgString) {
     resetTransform();
     rawSvgString   = svgString;
-    originalSvgDoc = new DOMParser().parseFromString(svgString, 'image/svg+xml');
+    const doc = new DOMParser().parseFromString(svgString, 'image/svg+xml');
+    // DOMParser never throws — check for a parse error element instead
+    if (doc.querySelector('parsererror')) {
+        workerError({ message: 'The file could not be parsed as SVG.' });
+        return;
+    }
+    originalSvgDoc = doc;
     normalizeSvg();
     applyTransform();
-    document.getElementById('sourceSvgImg').style.display = '';
+    document.getElementById('canvasPreviewImg').style.display = '';
+    document.getElementById('canvasEmptyState').style.display  = 'none';
     document.getElementById('positionCard').style.display = '';
     document.getElementById('processBtn').disabled = false;
 }
@@ -692,7 +720,7 @@ async function getCurrentSvgImageData() {
     const ctx    = canvas.getContext('2d');
     const img    = await new Promise((res, rej) => {
         const i = new Image(); i.onload = () => res(i); i.onerror = rej;
-        i.src = 'data:image/svg+xml;base64,' + btoa(str);
+        i.src = svgToDataURL(str);
     });
     const bmp = await createImageBitmap(img, { resizeWidth: w, resizeHeight: h });
     ctx.drawImage(bmp, 0, 0, w, h);
@@ -704,13 +732,17 @@ function convertJsonToDataURL(json, w, h) {
     canvas.width  = w; canvas.height = h;
     canvas.style.display = 'none';
     document.body.appendChild(canvas);
-    paper.setup(canvas);
-    paper.project.importJSON(json);
-    paper.view.draw();
-    const url = canvas.toDataURL();
-    paper.project.remove();
-    document.body.removeChild(canvas);
-    return url;
+    try {
+        paper.setup(canvas);
+        paper.project.importJSON(json);
+        paper.view.draw();
+        const url = canvas.toDataURL();
+        paper.project.remove();
+        return url;
+    } finally {
+        // always remove the canvas even if paper throws
+        if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -719,10 +751,11 @@ function convertJsonToDataURL(json, w, h) {
 
 function updateCanvasViz() {
     const w = parseInt(document.getElementById('canvasWidth').value)  || 700;
-    const h = parseInt(document.getElementById('canvasHeight').value) || Math.round(targetHeight) || w;
+    const h = Math.max(1, parseInt(document.getElementById('canvasHeight').value) || Math.round(targetHeight) || w);
+    const safeW = Math.max(1, w);
 
     const maxW = 300, maxH = 160;
-    const aspect = w / h;
+    const aspect = safeW / h;
 
     let boxW, boxH;
     if (aspect >= maxW / maxH) {
@@ -739,10 +772,10 @@ function updateCanvasViz() {
     box.style.width  = boxW + 'px';
     box.style.height = boxH + 'px';
 
-    lbl.textContent  = `${w} × ${h} mm`;
+    lbl.textContent  = `${safeW} × ${h} mm`;
     hint.textContent = aspect >= 1
-        ? `Landscape  ·  ${(w/h).toFixed(2)}:1`
-        : `Portrait  ·  1:${(h/w).toFixed(2)}`;
+        ? `Landscape  ·  ${(safeW/h).toFixed(2)}:1`
+        : `Portrait  ·  1:${(h/safeW).toFixed(2)}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -760,7 +793,9 @@ function setStatus(text) {
     const log   = document.getElementById('phaseLog');
     const entry = document.createElement('div');
     entry.className = 'phase-entry';
-    entry.innerHTML = `<span class="dot"></span><span>${text}</span>`;
+    const dot  = document.createElement('span'); dot.className = 'dot';
+    const span = document.createElement('span'); span.textContent = text;
+    entry.appendChild(dot); entry.appendChild(span);
     log.appendChild(entry);
     // Keep only the last 6 lines so it doesn't grow indefinitely
     while (log.children.length > 6) log.removeChild(log.firstChild);
@@ -776,6 +811,7 @@ function startProcessing() {
     document.getElementById('phaseLog').innerHTML = '';
 
     const bar = document.getElementById('progressBar');
+    bar.style.background = '';   // clear any inline error colour from a previous run
     bar.classList.add('progress-bar-striped', 'progress-bar-animated');
     bar.classList.remove('bg-success');
     bar.textContent = 'Starting…';
@@ -790,59 +826,86 @@ function startProcessing() {
     }
 }
 
-function processPathTracing() {
-    setStatus('Importing SVG…');
-    currentWorker = new Worker('./worker.js');
-
-    const renderSvg = getRenderSvg();
-    const svgString = new XMLSerializer().serializeToString(renderSvg);
-    const svgJson   = getSvgJson(svgString);
-
-    currentWorker.onmessage = handleWorkerMessage;
-    currentWorker.postMessage({
-        type:          'renderSvg',
-        svgJson,
-        width:         targetWidth,
-        height:        targetHeight,
-        svgWidth:      targetWidth,
-        svgHeight:     targetHeight,
-        homeX:         targetWidth  / 2,
-        homeY:         0,
-        infillDensity: parseInt(document.getElementById('infillDensity').value),
-        flattenPaths:  document.getElementById('flattenPaths').checked,
-    });
+function workerError(e) {
+    const msg = e.message || 'Worker failed to load — is worker.js present?';
+    const bar = document.getElementById('progressBar');
+    bar.classList.remove('progress-bar-animated');
+    bar.style.background = 'oklch(52% 0.18 25)';
+    bar.textContent = 'Error: ' + msg;
 }
 
-async function processVRV() {
-    setStatus('Rasterizing…');
+function processPathTracing() {
+    setStatus('Converting SVG…');
     currentWorker = new Worker('./worker.js');
+    currentWorker.onerror = workerError;
 
-    const raster   = await getCurrentSvgImageData();
-    const turdSize = parseInt(document.getElementById('turdSize').value);
-
-    currentWorker.onmessage = function (e) {
-        if (e.data.type === 'status') {
-            setStatus(e.data.payload);
-        } else if (e.data.type === 'vectorizer') {
-            const vSvgStr = e.data.payload.svg;
-            const svgJson = getSvgJson(vSvgStr);
+    // getSvgJson runs Paper.js synchronously on the main thread and can take
+    // several seconds for complex files. Yield first so the status text renders.
+    setTimeout(() => {
+        try {
+            const renderSvg = getRenderSvg();
+            const svgString = new XMLSerializer().serializeToString(renderSvg);
+            setStatus('Importing SVG…');
+            const svgJson   = getSvgJson(svgString);
+            setStatus('Sending to worker…');
             currentWorker.onmessage = handleWorkerMessage;
             currentWorker.postMessage({
                 type:          'renderSvg',
                 svgJson,
                 width:         targetWidth,
                 height:        targetHeight,
-                svgWidth:      targetWidth  * renderScale,
-                svgHeight:     targetHeight * renderScale,
+                svgWidth:      targetWidth,
+                svgHeight:     targetHeight,
                 homeX:         targetWidth  / 2,
                 homeY:         0,
                 infillDensity: parseInt(document.getElementById('infillDensity').value),
-                flattenPaths:  false,
+                flattenPaths:  document.getElementById('flattenPaths').checked,
             });
+        } catch (err) {
+            workerError({ message: err.message });
         }
-    };
+    }, 50);
+}
 
-    currentWorker.postMessage({ type: 'vectorize', raster, turdSize });
+async function processVRV() {
+    setStatus('Rasterizing…');
+    currentWorker = new Worker('./worker.js');
+    currentWorker.onerror = workerError;
+
+    try {
+        const raster   = await getCurrentSvgImageData();
+        const turdSize = parseInt(document.getElementById('turdSize').value);
+
+        currentWorker.onmessage = function (e) {
+            if (e.data.type === 'status') {
+                setStatus(e.data.payload);
+            } else if (e.data.type === 'vectorizer') {
+                try {
+                    const vSvgStr = e.data.payload.svg;
+                    const svgJson = getSvgJson(vSvgStr);
+                    currentWorker.onmessage = handleWorkerMessage;
+                    currentWorker.postMessage({
+                        type:          'renderSvg',
+                        svgJson,
+                        width:         targetWidth,
+                        height:        targetHeight,
+                        svgWidth:      targetWidth  * renderScale,
+                        svgHeight:     targetHeight * renderScale,
+                        homeX:         targetWidth  / 2,
+                        homeY:         0,
+                        infillDensity: parseInt(document.getElementById('infillDensity').value),
+                        flattenPaths:  false,
+                    });
+                } catch (err) {
+                    workerError({ message: 'VRV vectorizer step failed: ' + err.message });
+                }
+            }
+        };
+
+        currentWorker.postMessage({ type: 'vectorize', raster, turdSize });
+    } catch (err) {
+        workerError({ message: 'Rasterization failed: ' + err.message });
+    }
 }
 
 function handleWorkerMessage(e) {
@@ -864,15 +927,22 @@ function handleWorkerMessage(e) {
         if (log.lastChild) log.lastChild.classList.add('done');
 
         // Render result preview
-        const url = convertJsonToDataURL(svgJson, targetWidth, targetHeight);
-        const img = document.getElementById('resultPreview');
-        img.src   = url;
+        try {
+            const url = convertJsonToDataURL(svgJson, targetWidth, targetHeight);
+            const img = document.getElementById('resultPreview');
+            img.src   = url;
+        } catch (e) {
+            // Preview failed but commands are still valid — show a warning
+            document.getElementById('resultPreview').alt = 'Preview unavailable: ' + e.message;
+        }
 
         const totalM = +(distance     / 1000).toFixed(1);
         const drawM  = +(drawDistance / 1000).toFixed(1);
-        document.getElementById('resultMeta').innerHTML =
-            `<span><i class="bi-arrows-move" style="font-size:.85em;"></i> Total travel: ${totalM} m</span>` +
-            `<span><i class="bi-pen" style="font-size:.85em;"></i> Drawing: ${drawM} m</span>`;
+        const meta = document.getElementById('resultMeta');
+        meta.textContent = '';
+        const t1 = document.createElement('span'); t1.textContent = `Total travel: ${totalM} m`;
+        const t2 = document.createElement('span'); t2.textContent = `Drawing: ${drawM} m`;
+        meta.appendChild(t1); meta.appendChild(t2);
 
         document.getElementById('resultSection').style.display = '';
         document.getElementById('exportBtn').disabled = false;
