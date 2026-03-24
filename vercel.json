@@ -1,5 +1,0 @@
-{
-  "buildCommand": "cd tsc && npm install && npm run build && cp dist_packed/main.js ../studio/worker.js",
-  "outputDirectory": "studio",
-  "installCommand": "echo skip"
-}
