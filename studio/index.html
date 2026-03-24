@@ -524,63 +524,39 @@
     <div class="step-num">02</div>
     <div class="step-body">
       <div class="step-label">Step two</div>
-      <div class="step-title">Canvas Size</div>
+      <div class="step-title">Pin-to-pin Distance</div>
       <p class="step-explainer">
-        Enter your <strong>pin-to-pin distance</strong> — this is the full plottable span
-        and becomes the outer boundary. The canvas is your actual drawing area inside it;
-        it starts at maximum and you can shrink it. All coordinates are generated in mm at
-        this physical scale.
+        Measure the distance between the two anchor pins on your wall. This sets the
+        drawing width in mm. Height is computed automatically from the artwork's proportions.
       </p>
 
       <div class="field-row">
         <div class="field-group">
-          <label for="wallDistance">Pin-to-pin</label>
-          <input type="number" id="wallDistance" placeholder="e.g. 1200 mm" min="200" max="8000">
-        </div>
-        <div class="field-group">
-          <label for="canvasWidth">Canvas width</label>
-          <input type="number" id="canvasWidth" value="700" min="100" max="4000">
-        </div>
-        <div class="field-group">
-          <label for="canvasHeight">Height</label>
-          <input type="number" id="canvasHeight" placeholder="auto" min="100" max="4000">
+          <label for="wallDistance">Pin-to-pin (mm)</label>
+          <input type="number" id="wallDistance" placeholder="e.g. 1200" min="200" max="8000">
         </div>
       </div>
 
-      <!-- Two-frame canvas visualiser -->
+      <!-- Canvas visualiser -->
       <div class="canvas-viz-area">
-        <!--
-          #wallContext sizes to pin-to-pin width (px).
-          #canvasVizBox inside it sizes to canvas width proportionally.
-          When no pin-to-pin: wallContext == canvasVizBox visually.
-        -->
         <div id="wallContext" class="no-wall">
           <div id="canvasVizBox">
             <img id="canvasPreviewImg" style="display:none;" alt="Canvas preview">
             <div id="canvasEmptyState">
-              <span class="empty-dim" id="canvasVizLabel">700 mm wide</span>
-              <span class="empty-cue">Upload an SVG to see it here</span>
+              <span class="empty-dim" id="canvasVizLabel">—</span>
+              <span class="empty-cue">Enter pin-to-pin distance, then upload an SVG</span>
             </div>
           </div>
         </div>
         <div class="viz-labels">
-          <!-- Canvas measurement row (always shown) -->
-          <div class="meas-row" id="canvasMeasRow">
+          <div class="meas-row" id="canvasMeasRow" style="display:none;">
             <span class="meas-tick"></span>
             <span class="meas-line"></span>
-            <span class="meas-label" id="canvasMeasLabel">700 mm</span>
-            <span class="meas-line"></span>
-            <span class="meas-tick"></span>
-          </div>
-          <!-- Wall measurement row (shown only when pin-to-pin entered) -->
-          <div class="meas-row" id="wallMeasRow" style="display:none;">
-            <span class="meas-tick"></span>
-            <span class="meas-line"></span>
-            <span class="meas-label" id="wallMeasLabel">— mm wall</span>
+            <span class="meas-label" id="canvasMeasLabel"></span>
             <span class="meas-line"></span>
             <span class="meas-tick"></span>
           </div>
-          <p class="viz-hint" id="canvasVizHint">Enter pin-to-pin distance above to see wall context</p>
+          <p class="viz-hint" id="canvasVizHint">Enter pin-to-pin distance to set the drawing scale</p>
         </div>
       </div>
     </div>
@@ -710,13 +686,6 @@
               <span class="meas-line"></span>
               <span class="meas-tick"></span>
             </div>
-            <div class="meas-row" id="resultWallMeasRow" style="display:none;">
-              <span class="meas-tick"></span>
-              <span class="meas-line"></span>
-              <span class="meas-label" id="resultWallMeasLabel"></span>
-              <span class="meas-line"></span>
-              <span class="meas-tick"></span>
-            </div>
           </div>
         </div>
 
@@ -838,12 +807,8 @@ function normalizeSvg() {
     }
     if (!intrW || !intrH) throw new Error('Cannot determine SVG dimensions.');
 
-    targetWidth  = parseInt(document.getElementById('canvasWidth').value) || 700;
-    const autoH  = targetWidth / intrW * intrH;
-    const manualH = parseInt(document.getElementById('canvasHeight').value);
-    targetHeight = (manualH && !isNaN(manualH)) ? manualH : autoH;
-
-    document.getElementById('canvasHeight').placeholder = Math.round(autoH) + ' (auto)';
+    targetWidth  = parseInt(document.getElementById('wallDistance').value) || 700;
+    targetHeight = targetWidth / intrW * intrH;  // always auto from aspect ratio
 
     el.setAttribute('width',  String(targetWidth));
     el.setAttribute('height', String(targetHeight));
@@ -865,9 +830,6 @@ function setSvgString(svgString) {
         return;
     }
     originalSvgDoc = doc;
-    // Reset height to auto every time a new SVG is loaded — the placeholder
-    // will show the computed value so the user can see it and override if needed.
-    document.getElementById('canvasHeight').value = '';
     normalizeSvg();
     applyTransform();
     document.getElementById('canvasPreviewImg').style.display = '';
@@ -960,136 +922,81 @@ function commandsToPreviewSvgURL(commands, w, h) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function updateCanvasViz() {
-    const canvasW = Math.max(1, parseInt(document.getElementById('canvasWidth').value)  || 700);
-    const canvasH = Math.max(1, parseInt(document.getElementById('canvasHeight').value) || Math.round(targetHeight) || canvasW);
-    const wallW   = Math.max(1, parseInt(document.getElementById('wallDistance').value) || 0);
+    const wallW  = parseInt(document.getElementById('wallDistance').value) || 0;
+    const canvasW = Math.max(1, wallW || targetWidth || 700);
+    const canvasH = Math.max(1, Math.round(targetHeight) || canvasW);
 
     const wallCtx   = document.getElementById('wallContext');
     const box       = document.getElementById('canvasVizBox');
     const lbl       = document.getElementById('canvasVizLabel');
     const hint      = document.getElementById('canvasVizHint');
-    const wallRow   = document.getElementById('wallMeasRow');
-    const wallLbl   = document.getElementById('wallMeasLabel');
     const canvasRow = document.getElementById('canvasMeasRow');
     const canvasLbl = document.getElementById('canvasMeasLabel');
 
-    // Use the actual container width so the viz fills the card at any size
     const container = document.querySelector('.canvas-viz-area');
     const availW = Math.max(200, (container ? container.clientWidth : 500) - 40);
 
-    const hasWall = wallW > 0;
-
-    if (hasWall) {
-        // --- two-frame mode ---
-        // Wall frame spans full available width; canvas box shrinks inside it
-        const ratio  = Math.min(canvasW / wallW, 1);
-        // Enforce a readable minimum so even a small canvas shows its label
-        const MIN_BOX_W = 80;
-        const boxWpx = Math.max(MIN_BOX_W, Math.round(availW * ratio));
-        const boxHpx = Math.max(48, Math.round(boxWpx * canvasH / canvasW));
-        const wallHpx = boxHpx + 28;
-
-        wallCtx.className = 'has-wall';
-        wallCtx.style.width  = availW + 'px';
-        wallCtx.style.height = wallHpx + 'px';
-        box.style.width  = boxWpx + 'px';
-        box.style.height = boxHpx + 'px';
-
-        wallRow.style.display  = '';
-        wallRow.style.width    = availW + 'px';
-        wallLbl.textContent    = wallW + ' mm (wall)';
-        canvasRow.style.width  = boxWpx + 'px';
-        canvasLbl.textContent  = canvasW + ' mm';
-
-        hint.textContent = `Canvas is ${Math.round(ratio*100)}% of wall width`;
+    const aspect = canvasW / canvasH;
+    const maxH   = 220;
+    let boxWpx, boxHpx;
+    if (aspect >= availW / maxH) {
+        boxWpx = availW; boxHpx = Math.round(availW / aspect);
     } else {
-        // --- canvas-only mode ---
-        const aspect = canvasW / canvasH;
-        const maxH   = 200;
-        let boxWpx, boxHpx;
-        if (aspect >= availW / maxH) {
-            boxWpx = availW; boxHpx = Math.round(availW / aspect);
-        } else {
-            boxHpx = maxH; boxWpx = Math.round(maxH * aspect);
-        }
-        boxWpx = Math.max(boxWpx, 80); boxHpx = Math.max(boxHpx, 48);
-
-        wallCtx.className = 'no-wall';
-        wallCtx.style.width  = boxWpx + 'px';
-        wallCtx.style.height = boxHpx + 'px';
-        box.style.width  = boxWpx + 'px';
-        box.style.height = boxHpx + 'px';
-
-        wallRow.style.display  = 'none';
-        canvasRow.style.width  = boxWpx + 'px';
-        canvasLbl.textContent  = canvasW + ' mm';
-
-        hint.textContent = 'Enter pin-to-pin distance above to see wall context';
+        boxHpx = maxH; boxWpx = Math.round(maxH * aspect);
     }
+    boxWpx = Math.max(boxWpx, 80); boxHpx = Math.max(boxHpx, 48);
 
-    lbl.textContent = `${canvasW} × ${canvasH} mm`;
+    wallCtx.className = wallW > 0 ? 'has-wall' : 'no-wall';
+    wallCtx.style.width  = boxWpx + 'px';
+    wallCtx.style.height = boxHpx + 'px';
+    box.style.width  = boxWpx + 'px';
+    box.style.height = boxHpx + 'px';
+
+    if (wallW > 0) {
+        canvasRow.style.display = '';
+        canvasRow.style.width   = boxWpx + 'px';
+        canvasLbl.textContent   = `${canvasW} × ${Math.round(canvasH)} mm`;
+        hint.textContent = '';
+        lbl.textContent  = '';
+    } else {
+        canvasRow.style.display = 'none';
+        lbl.textContent  = '';
+        hint.textContent = 'Enter pin-to-pin distance to set the drawing scale';
+    }
 }
 
-// Same layout logic as updateCanvasViz but drives the result preview frame.
-// renderedW/renderedH are the actual pixel dimensions of the image (from convertJsonToDataURL),
-// so the box aspect ratio always matches the image exactly — no distortion.
 function updateResultViz(imgSrc, renderedW, renderedH) {
-    const canvasW = Math.max(1, renderedW || parseInt(document.getElementById('canvasWidth').value)  || 700);
-    const canvasH = Math.max(1, renderedH || parseInt(document.getElementById('canvasHeight').value) || Math.round(targetHeight) || canvasW);
-    const wallW   = Math.max(1, parseInt(document.getElementById('wallDistance').value) || 0);
+    const canvasW = Math.max(1, renderedW || 700);
+    const canvasH = Math.max(1, renderedH || canvasW);
 
     const wallCtx   = document.getElementById('resultWallContext');
     const box       = document.getElementById('resultVizBox');
     const img       = document.getElementById('resultPreview');
-    const wallRow   = document.getElementById('resultWallMeasRow');
-    const wallLbl   = document.getElementById('resultWallMeasLabel');
     const canvasRow = document.getElementById('resultCanvasMeasRow');
     const canvasLbl = document.getElementById('resultCanvasMeasLabel');
 
     const container = wallCtx.closest('.canvas-viz-area');
     const availW = Math.max(200, (container ? container.clientWidth : 500) - 40);
 
-    const hasWall = wallW > 0;
-
-    if (hasWall) {
-        const ratio  = Math.min(canvasW / wallW, 1);
-        const MIN_BOX_W = 80;
-        const boxWpx = Math.max(MIN_BOX_W, Math.round(availW * ratio));
-        const boxHpx = Math.max(48, Math.round(boxWpx * canvasH / canvasW));
-        const wallHpx = boxHpx + 28;
-
-        wallCtx.className = 'has-wall';
-        wallCtx.style.width  = availW + 'px';
-        wallCtx.style.height = wallHpx + 'px';
-        box.style.width  = boxWpx + 'px';
-        box.style.height = boxHpx + 'px';
-
-        wallRow.style.display  = '';
-        wallRow.style.width    = availW + 'px';
-        wallLbl.textContent    = wallW + ' mm (wall)';
-        canvasRow.style.width  = boxWpx + 'px';
-        canvasLbl.textContent  = canvasW + ' mm';
+    const aspect = canvasW / canvasH;
+    const maxH   = 220;
+    let boxWpx, boxHpx;
+    if (aspect >= availW / maxH) {
+        boxWpx = availW; boxHpx = Math.round(availW / aspect);
     } else {
-        const aspect = canvasW / canvasH;
-        const maxH   = 200;
-        let boxWpx, boxHpx;
-        if (aspect >= availW / maxH) {
-            boxWpx = availW; boxHpx = Math.round(availW / aspect);
-        } else {
-            boxHpx = maxH; boxWpx = Math.round(maxH * aspect);
-        }
-        boxWpx = Math.max(boxWpx, 80); boxHpx = Math.max(boxHpx, 48);
-
-        wallCtx.className = 'no-wall';
-        wallCtx.style.width  = boxWpx + 'px';
-        wallCtx.style.height = boxHpx + 'px';
-        box.style.width  = boxWpx + 'px';
-        box.style.height = boxHpx + 'px';
-
-        wallRow.style.display  = 'none';
-        canvasRow.style.width  = boxWpx + 'px';
-        canvasLbl.textContent  = canvasW + ' mm';
+        boxHpx = maxH; boxWpx = Math.round(maxH * aspect);
     }
+    boxWpx = Math.max(boxWpx, 80); boxHpx = Math.max(boxHpx, 48);
+
+    wallCtx.className = 'no-wall';
+    wallCtx.style.width  = boxWpx + 'px';
+    wallCtx.style.height = boxHpx + 'px';
+    box.style.width  = boxWpx + 'px';
+    box.style.height = boxHpx + 'px';
+
+    canvasRow.style.display = '';
+    canvasRow.style.width   = boxWpx + 'px';
+    canvasLbl.textContent   = `${Math.round(canvasW)} × ${Math.round(canvasH)} mm`;
 
     if (imgSrc) {
         img.src = imgSrc;
@@ -1287,27 +1194,9 @@ document.addEventListener('DOMContentLoaded', function () {
         setSvgString(text);
     }
 
-    // Pin-to-pin: sets canvas width to full wall width by default
     document.getElementById('wallDistance').addEventListener('input', function () {
-        const wall = Math.max(1, parseInt(this.value) || 0);
-        if (wall > 0) {
-            document.getElementById('canvasWidth').value = wall;
-            reNormalize();
-        }
+        reNormalize();
         updateCanvasViz();
-    });
-
-    document.getElementById('canvasWidth').addEventListener('change', () => {
-        reNormalize(); updateCanvasViz();
-    });
-    document.getElementById('canvasHeight').addEventListener('change', function () {
-        updateCanvasViz();
-        if (!rawSvgString) return;
-        targetHeight = parseInt(this.value) || targetHeight;
-        if (originalSvgDoc) {
-            originalSvgDoc.documentElement.setAttribute('height', String(targetHeight));
-            applyTransform();
-        }
     });
 
     document.getElementById('panUp'   ).addEventListener('click', () => { affineTransform[5] -= nudgeByFactor; applyTransform(); });
