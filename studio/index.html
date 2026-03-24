@@ -41,9 +41,9 @@
 
     /* ── Layout ────────────────────────────────────────────────────── */
     .studio {
-      max-width: 600px;
+      max-width: min(1200px, 80vw);
       margin: 0 auto;
-      padding: clamp(1.75rem, 5vw, 3.5rem) 1.25rem clamp(3rem, 8vw, 5rem);
+      padding: clamp(1.75rem, 5vw, 3.5rem) clamp(1rem, 3vw, 2rem) clamp(3rem, 8vw, 5rem);
     }
 
     /* ── Header ─────────────────────────────────────────────────────── */
@@ -425,12 +425,45 @@
       text-transform: uppercase; color: var(--text-3); margin-bottom: 0.5rem;
     }
     #resultPreview {
-      display: block; width: 100%;
-      max-height: 320px; object-fit: contain;
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: calc(var(--r) - 1px);
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
+    #resultVizBox {
+      border: 2px solid var(--wall-line);
+      border-radius: 2px;
+      background: white;
+      position: relative;
+      overflow: hidden;
+      transition: width .3s, height .3s, border-color .3s, box-shadow .3s;
+      flex-shrink: 0;
+    }
+    #resultWallContext.no-wall #resultVizBox {
+      border-color: var(--accent);
+      box-shadow: 0 3px 14px rgba(0,0,0,0.18);
+    }
+    #resultWallContext.has-wall #resultVizBox {
+      border-color: var(--accent);
+      box-shadow: 0 3px 14px rgba(0,0,0,0.18);
+    }
+    #resultWallContext {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: width .3s, height .3s;
+    }
+    #resultWallContext.has-wall::before,
+    #resultWallContext.has-wall::after {
+      content: '';
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      width: 1px; height: 60%;
+      background: var(--wall-line);
+    }
+    #resultWallContext.has-wall::before { left: 0; }
+    #resultWallContext.has-wall::after  { right: 0; }
     .result-meta {
       font-size: 0.8125rem; color: var(--text-2);
       margin-top: 0.5rem; display: flex; gap: 1.25rem; flex-wrap: wrap;
@@ -661,7 +694,32 @@
 
       <div id="resultSection" class="result-section" style="display:none;">
         <div class="result-label">Drawing path preview</div>
-        <img id="resultPreview" alt="Processed drawing path preview">
+
+        <!-- Same two-frame layout as step 2 canvas viz -->
+        <div class="canvas-viz-area">
+          <div id="resultWallContext" class="no-wall">
+            <div id="resultVizBox">
+              <img id="resultPreview" alt="Processed drawing path preview" style="display:none;">
+            </div>
+          </div>
+          <div class="viz-labels">
+            <div class="meas-row" id="resultCanvasMeasRow">
+              <span class="meas-tick"></span>
+              <span class="meas-line"></span>
+              <span class="meas-label" id="resultCanvasMeasLabel"></span>
+              <span class="meas-line"></span>
+              <span class="meas-tick"></span>
+            </div>
+            <div class="meas-row" id="resultWallMeasRow" style="display:none;">
+              <span class="meas-tick"></span>
+              <span class="meas-line"></span>
+              <span class="meas-label" id="resultWallMeasLabel"></span>
+              <span class="meas-line"></span>
+              <span class="meas-tick"></span>
+            </div>
+          </div>
+        </div>
+
         <div class="result-meta" id="resultMeta"></div>
         <div class="result-confirm">
           Check that all paths are traced and the artwork is positioned correctly.
@@ -807,6 +865,9 @@ function setSvgString(svgString) {
         return;
     }
     originalSvgDoc = doc;
+    // Reset height to auto every time a new SVG is loaded — the placeholder
+    // will show the computed value so the user can see it and override if needed.
+    document.getElementById('canvasHeight').value = '';
     normalizeSvg();
     applyTransform();
     document.getElementById('canvasPreviewImg').style.display = '';
@@ -855,30 +916,48 @@ async function getCurrentSvgImageData() {
     return ctx.getImageData(0, 0, w, h);
 }
 
-function convertJsonToDataURL(json, w, h) {
-    const canvas = document.createElement('canvas');
-    canvas.width = w; canvas.height = h;
-    canvas.style.display = 'none';
-    document.body.appendChild(canvas);
-    try {
-        paper.setup(canvas);
-        paper.project.importJSON(json);
-        paper.view.draw();
-        const url = canvas.toDataURL();
-        paper.project.remove();
-        return url;
-    } finally {
-        if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+// Build a preview SVG directly from plotter commands — no Paper.js, no canvas,
+// no device-pixel-ratio issues. Coordinates are in mm (0→w × 0→h).
+function commandsToPreviewSvgURL(commands, w, h) {
+    const polylines = [];
+    let pts = [];
+    let penDown = false;
+
+    for (const cmd of commands) {
+        const c0 = cmd.charAt(0);
+        if (c0 === 'd' || c0 === 'h') continue;
+        if (c0 === 'p') {
+            const down = cmd.charAt(1) === '1';
+            if (!down && penDown && pts.length > 1) {
+                // pen lifting — flush current stroke
+                polylines.push(pts.map(p => p[0] + ',' + p[1]).join(' '));
+                pts = pts.length ? [pts[pts.length - 1]] : [];
+            } else if (down && !penDown && pts.length > 1) {
+                pts = [pts[pts.length - 1]];
+            }
+            penDown = down;
+        } else {
+            const sp = cmd.indexOf(' ');
+            const x  = parseFloat(cmd);
+            const y  = parseFloat(cmd.slice(sp + 1));
+            if (!isNaN(x) && !isNaN(y)) pts.push([x, y]);
+        }
     }
+    if (penDown && pts.length > 1) {
+        polylines.push(pts.map(p => p[0] + ',' + p[1]).join(' '));
+    }
+
+    const lines = polylines.map(pts =>
+        `<polyline points="${pts}" fill="none" stroke="#111" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>`
+    ).join('');
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="${w}" height="${h}" fill="#fff"/>${lines}</svg>`;
+    return svgToDataURL(svg);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Canvas visualiser
 // ═══════════════════════════════════════════════════════════════════════════
-
-// WALL_PX: fixed pixel width of the outer wall context frame.
-// The inner canvas frame is sized proportionally inside it.
-const WALL_PX = 300;
 
 function updateCanvasViz() {
     const canvasW = Math.max(1, parseInt(document.getElementById('canvasWidth').value)  || 700);
@@ -894,26 +973,30 @@ function updateCanvasViz() {
     const canvasRow = document.getElementById('canvasMeasRow');
     const canvasLbl = document.getElementById('canvasMeasLabel');
 
+    // Use the actual container width so the viz fills the card at any size
+    const container = document.querySelector('.canvas-viz-area');
+    const availW = Math.max(200, (container ? container.clientWidth : 500) - 40);
+
     const hasWall = wallW > 0;
 
     if (hasWall) {
         // --- two-frame mode ---
-        // Wall context: full WALL_PX wide
-        // Canvas box: proportional fraction of wall width
-        const ratio    = Math.min(canvasW / wallW, 1);
-        const boxWpx   = Math.max(32, Math.round(WALL_PX * ratio));
-        const boxHpx   = Math.max(20, Math.round(boxWpx * canvasH / canvasW));
-        const wallHpx  = boxHpx + 24;  // wall frame taller by 12px top+bottom
+        // Wall frame spans full available width; canvas box shrinks inside it
+        const ratio  = Math.min(canvasW / wallW, 1);
+        // Enforce a readable minimum so even a small canvas shows its label
+        const MIN_BOX_W = 80;
+        const boxWpx = Math.max(MIN_BOX_W, Math.round(availW * ratio));
+        const boxHpx = Math.max(48, Math.round(boxWpx * canvasH / canvasW));
+        const wallHpx = boxHpx + 28;
 
         wallCtx.className = 'has-wall';
-        wallCtx.style.width  = WALL_PX + 'px';
+        wallCtx.style.width  = availW + 'px';
         wallCtx.style.height = wallHpx + 'px';
         box.style.width  = boxWpx + 'px';
         box.style.height = boxHpx + 'px';
 
-        // Measurement rows
         wallRow.style.display  = '';
-        wallRow.style.width    = WALL_PX + 'px';
+        wallRow.style.width    = availW + 'px';
         wallLbl.textContent    = wallW + ' mm (wall)';
         canvasRow.style.width  = boxWpx + 'px';
         canvasLbl.textContent  = canvasW + ' mm';
@@ -922,14 +1005,14 @@ function updateCanvasViz() {
     } else {
         // --- canvas-only mode ---
         const aspect = canvasW / canvasH;
-        const maxH   = 180;
+        const maxH   = 200;
         let boxWpx, boxHpx;
-        if (aspect >= WALL_PX / maxH) {
-            boxWpx = WALL_PX; boxHpx = Math.round(WALL_PX / aspect);
+        if (aspect >= availW / maxH) {
+            boxWpx = availW; boxHpx = Math.round(availW / aspect);
         } else {
             boxHpx = maxH; boxWpx = Math.round(maxH * aspect);
         }
-        boxWpx = Math.max(boxWpx, 40); boxHpx = Math.max(boxHpx, 24);
+        boxWpx = Math.max(boxWpx, 80); boxHpx = Math.max(boxHpx, 48);
 
         wallCtx.className = 'no-wall';
         wallCtx.style.width  = boxWpx + 'px';
@@ -945,6 +1028,73 @@ function updateCanvasViz() {
     }
 
     lbl.textContent = `${canvasW} × ${canvasH} mm`;
+}
+
+// Same layout logic as updateCanvasViz but drives the result preview frame.
+// renderedW/renderedH are the actual pixel dimensions of the image (from convertJsonToDataURL),
+// so the box aspect ratio always matches the image exactly — no distortion.
+function updateResultViz(imgSrc, renderedW, renderedH) {
+    const canvasW = Math.max(1, renderedW || parseInt(document.getElementById('canvasWidth').value)  || 700);
+    const canvasH = Math.max(1, renderedH || parseInt(document.getElementById('canvasHeight').value) || Math.round(targetHeight) || canvasW);
+    const wallW   = Math.max(1, parseInt(document.getElementById('wallDistance').value) || 0);
+
+    const wallCtx   = document.getElementById('resultWallContext');
+    const box       = document.getElementById('resultVizBox');
+    const img       = document.getElementById('resultPreview');
+    const wallRow   = document.getElementById('resultWallMeasRow');
+    const wallLbl   = document.getElementById('resultWallMeasLabel');
+    const canvasRow = document.getElementById('resultCanvasMeasRow');
+    const canvasLbl = document.getElementById('resultCanvasMeasLabel');
+
+    const container = wallCtx.closest('.canvas-viz-area');
+    const availW = Math.max(200, (container ? container.clientWidth : 500) - 40);
+
+    const hasWall = wallW > 0;
+
+    if (hasWall) {
+        const ratio  = Math.min(canvasW / wallW, 1);
+        const MIN_BOX_W = 80;
+        const boxWpx = Math.max(MIN_BOX_W, Math.round(availW * ratio));
+        const boxHpx = Math.max(48, Math.round(boxWpx * canvasH / canvasW));
+        const wallHpx = boxHpx + 28;
+
+        wallCtx.className = 'has-wall';
+        wallCtx.style.width  = availW + 'px';
+        wallCtx.style.height = wallHpx + 'px';
+        box.style.width  = boxWpx + 'px';
+        box.style.height = boxHpx + 'px';
+
+        wallRow.style.display  = '';
+        wallRow.style.width    = availW + 'px';
+        wallLbl.textContent    = wallW + ' mm (wall)';
+        canvasRow.style.width  = boxWpx + 'px';
+        canvasLbl.textContent  = canvasW + ' mm';
+    } else {
+        const aspect = canvasW / canvasH;
+        const maxH   = 200;
+        let boxWpx, boxHpx;
+        if (aspect >= availW / maxH) {
+            boxWpx = availW; boxHpx = Math.round(availW / aspect);
+        } else {
+            boxHpx = maxH; boxWpx = Math.round(maxH * aspect);
+        }
+        boxWpx = Math.max(boxWpx, 80); boxHpx = Math.max(boxHpx, 48);
+
+        wallCtx.className = 'no-wall';
+        wallCtx.style.width  = boxWpx + 'px';
+        wallCtx.style.height = boxHpx + 'px';
+        box.style.width  = boxWpx + 'px';
+        box.style.height = boxHpx + 'px';
+
+        wallRow.style.display  = 'none';
+        canvasRow.style.width  = boxWpx + 'px';
+        canvasLbl.textContent  = canvasW + ' mm';
+    }
+
+    if (imgSrc) {
+        img.src = imgSrc;
+        img.style.display = 'block';
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1070,7 +1220,7 @@ function handleWorkerMessage(e) {
     if (e.data.type === 'status') {
         setStatus(e.data.payload);
     } else if (e.data.type === 'renderer') {
-        const { commands, svgJson, distance, drawDistance } = e.data.payload;
+        const { commands, distance, drawDistance } = e.data.payload;
         exportCommandsStr = commands.join('\n');
 
         const bar = document.getElementById('progressBar');
@@ -1081,12 +1231,10 @@ function handleWorkerMessage(e) {
         const log = document.getElementById('phaseLog');
         if (log.lastChild) log.lastChild.classList.add('done');
 
-        try {
-            const url = convertJsonToDataURL(svgJson, targetWidth, targetHeight);
-            document.getElementById('resultPreview').src = url;
-        } catch (err) {
-            document.getElementById('resultPreview').alt = 'Preview unavailable: ' + err.message;
-        }
+        document.getElementById('resultSection').style.display = '';
+
+        const url = commandsToPreviewSvgURL(commands, targetWidth, targetHeight);
+        updateResultViz(url, targetWidth, targetHeight);
 
         const totalM = +(distance     / 1000).toFixed(1);
         const drawM  = +(drawDistance / 1000).toFixed(1);
@@ -1096,7 +1244,6 @@ function handleWorkerMessage(e) {
         const t2 = document.createElement('span'); t2.textContent = `Drawing: ${drawM} m`;
         meta.appendChild(t1); meta.appendChild(t2);
 
-        document.getElementById('resultSection').style.display = '';
         document.getElementById('exportBtn').disabled = false;
     }
 }
@@ -1190,6 +1337,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('exportBtn').addEventListener('click', exportCommands);
 
     updateCanvasViz();
+    window.addEventListener('resize', updateCanvasViz);
 });
 </script>
 </body>
