@@ -12,18 +12,21 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:         oklch(96.5% 0.01  72);
-      --surface:    oklch(99%   0.005 72);
-      --border:     oklch(88%   0.015 72);
-      --text:       oklch(20%   0.02 260);
-      --text-2:     oklch(50%   0.015 270);
-      --accent:     oklch(52%   0.14  35);
-      --accent-hi:  oklch(44%   0.13  35);
-      --success:    oklch(52%   0.13 148);
-      --num-dim:    oklch(87%   0.018 72);
-      --r:          8px;
-      --ff-head:    'Space Grotesk', sans-serif;
-      --ff-body:    'DM Sans', sans-serif;
+      --bg:        oklch(96.5% 0.01  72);
+      --surface:   oklch(99%   0.005 72);
+      --border:    oklch(88%   0.015 72);
+      --text:      oklch(20%   0.02 260);
+      --text-2:    oklch(50%   0.015 270);
+      --text-3:    oklch(68%   0.01  270);
+      --accent:    oklch(52%   0.14  35);
+      --accent-hi: oklch(44%   0.13  35);
+      --success:   oklch(52%   0.13 148);
+      --wall-bg:   oklch(86%   0.018 72);
+      --wall-line: oklch(72%   0.018 72);
+      --num-dim:   oklch(87%   0.018 72);
+      --r:         8px;
+      --ff-head:   'Space Grotesk', sans-serif;
+      --ff-body:   'DM Sans', sans-serif;
     }
 
     html { font-size: 16px; }
@@ -36,14 +39,15 @@
       -webkit-font-smoothing: antialiased;
     }
 
+    /* ── Layout ────────────────────────────────────────────────────── */
     .studio {
       max-width: 600px;
       margin: 0 auto;
       padding: clamp(1.75rem, 5vw, 3.5rem) 1.25rem clamp(3rem, 8vw, 5rem);
     }
 
-    /* ── Header ────────────────────────────────────────────────────── */
-    .studio-header { margin-bottom: clamp(2.25rem, 6vw, 4rem); }
+    /* ── Header ─────────────────────────────────────────────────────── */
+    .studio-header { margin-bottom: clamp(2.5rem, 6vw, 4rem); }
     .studio-header h1 {
       font-family: var(--ff-head);
       font-size: clamp(1.625rem, 4vw, 2.125rem);
@@ -51,14 +55,18 @@
       letter-spacing: -0.035em;
       line-height: 1.15;
     }
-    .studio-header p { margin-top: 0.4rem; font-size: 0.875rem; color: var(--text-2); }
+    .studio-header p {
+      margin-top: 0.4rem;
+      font-size: 0.875rem;
+      color: var(--text-2);
+    }
 
-    /* ── Steps ─────────────────────────────────────────────────────── */
+    /* ── Steps ──────────────────────────────────────────────────────── */
     .step {
       display: grid;
       grid-template-columns: 2.5rem 1fr;
       column-gap: 1rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.375rem;
     }
     .step-num {
       font-family: var(--ff-head);
@@ -78,26 +86,33 @@
     }
     .step-label {
       font-family: var(--ff-head);
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 500;
-      letter-spacing: 0.09em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--text-2);
-      margin-bottom: 0.25rem;
+      color: var(--text-3);
+      margin-bottom: 0.2rem;
     }
-    /* Explainer text under each step label */
+    .step-title {
+      font-family: var(--ff-head);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.375rem;
+      letter-spacing: -0.01em;
+    }
     .step-explainer {
       font-size: 0.8125rem;
       color: var(--text-2);
-      margin-bottom: 0.875rem;
-      line-height: 1.5;
+      margin-bottom: 1rem;
+      line-height: 1.55;
     }
 
-    /* ── Drop zone ─────────────────────────────────────────────────── */
+    /* ── Drop zone ──────────────────────────────────────────────────── */
     #dropZone {
       border: 1.5px dashed var(--border);
       border-radius: calc(var(--r) - 1px);
-      padding: 2rem 1.25rem;
+      padding: 1.75rem 1.25rem;
       text-align: center;
       color: var(--text-2);
       cursor: pointer;
@@ -107,16 +122,28 @@
     #dropZone:hover     { border-color: var(--accent); color: var(--text); }
     #dropZone.drag-over { border-color: var(--accent); background: oklch(97.5% 0.02 35); color: var(--accent); }
     #dropZone.has-file  { border-color: var(--success); color: var(--success); }
-    .drop-icon { font-size: 1.75rem; display: block; margin-bottom: 0.4rem; opacity: 0.4; transition: opacity .2s; }
-    #dropZone.has-file .drop-icon { opacity: 0.9; }
+    .drop-icon { font-size: 1.5rem; display: block; margin-bottom: 0.35rem; opacity: 0.4; transition: opacity .2s; }
+    #dropZone.has-file .drop-icon { opacity: 0.85; }
 
-    /* ── Canvas size viz + live artwork preview ─────────────────────── */
-    .canvas-inputs-row {
-      display: flex; flex-wrap: wrap;
-      align-items: center; gap: 0.5rem 0.875rem;
+    /* ── Inputs ─────────────────────────────────────────────────────── */
+    .field-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 1rem;
       margin-bottom: 0.875rem;
     }
-    .canvas-inputs-row label { font-size: 0.8125rem; color: var(--text-2); white-space: nowrap; }
+    .field-row + .field-row { margin-top: 0; }
+    .field-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .field-group label {
+      font-size: 0.8125rem;
+      color: var(--text-2);
+      white-space: nowrap;
+    }
 
     input[type="number"] {
       width: 88px;
@@ -125,79 +152,141 @@
       border-radius: calc(var(--r) - 2px);
       padding: 0.4rem 0.6rem;
       font-family: var(--ff-body);
-      font-size: 0.9rem;
+      font-size: 0.875rem;
       color: var(--text);
       outline: none;
       appearance: none;
-      transition: border-color .15s;
+      transition: border-color .15s, box-shadow .15s;
     }
-    input[type="number"]:focus { border-color: var(--accent); }
+    input[type="number"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px oklch(52% 0.14 35 / 0.12);
+    }
 
-    /* The "wall" area surrounding the canvas frame */
-    .canvas-viz-wrap {
-      background: oklch(88% 0.015 72);
+    /* ── Canvas visualiser ──────────────────────────────────────────── */
+
+    /* Outer wall frame — the full plottable span */
+    .canvas-viz-area {
+      background: var(--wall-bg);
       border: 1px solid var(--border);
       border-radius: calc(var(--r) - 1px);
-      padding: 1.25rem;
+      padding: 1.25rem 1.25rem 1rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 80px;
     }
 
-    /* The canvas frame — JS sets width & height; artwork img fills it */
+    /* The wall context: only rendered when pin-to-pin is entered */
+    #wallContext {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: width .3s, height .3s;
+    }
+
+    /* When no pin-to-pin: wall context IS the canvas frame */
+    #wallContext.no-wall #canvasVizBox {
+      border-color: var(--accent);
+      box-shadow: 0 3px 14px rgba(0,0,0,0.18);
+    }
+
+    /* Wall tick marks at each end */
+    #wallContext.has-wall::before,
+    #wallContext.has-wall::after {
+      content: '';
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      width: 1px; height: 60%;
+      background: var(--wall-line);
+    }
+    #wallContext.has-wall::before { left: 0; }
+    #wallContext.has-wall::after  { right: 0; }
+
+    /* Canvas frame — inner drawing area */
     #canvasVizBox {
-      border: 2px solid var(--accent);
+      border: 2px solid var(--wall-line);  /* default; overridden below */
       border-radius: 2px;
       background: white;
       position: relative;
-      overflow: hidden;           /* clips artwork outside canvas boundary */
-      box-shadow: 0 3px 14px rgba(0,0,0,0.18);
-      transition: width .25s, height .25s;
-      max-width: 100%;
+      overflow: hidden;
+      transition: width .3s, height .3s, border-color .3s, box-shadow .3s;
+      flex-shrink: 0;
     }
 
-    /* Artwork preview — fills canvas frame exactly */
+    /* Active canvas frame (has-wall mode) */
+    #wallContext.has-wall #canvasVizBox {
+      border-color: var(--accent);
+      box-shadow: 0 3px 14px rgba(0,0,0,0.18);
+    }
+
     #canvasPreviewImg {
       display: block;
       width: 100%;
       height: 100%;
     }
 
-    /* Shown when no SVG is loaded yet */
     #canvasEmptyState {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       pointer-events: none;
-      gap: 0.3rem;
+      gap: 0.25rem;
     }
-    #canvasVizLabel {
+    .empty-dim {
       font-family: var(--ff-head);
       font-size: 0.75rem;
       font-weight: 500;
       color: var(--text-2);
+    }
+    .empty-cue {
+      font-size: 0.7rem;
+      color: var(--text-3);
+    }
+
+    /* Measurement labels row below the viz */
+    .viz-labels {
+      width: 100%;
+      margin-top: 0.625rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+    .meas-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .meas-tick {
+      flex-shrink: 0;
+      width: 1px; height: 7px;
+      background: var(--wall-line);
+    }
+    .meas-line {
+      flex: 1;
+      height: 1px;
+      background: var(--wall-line);
+    }
+    .meas-label {
+      font-family: var(--ff-head);
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-3);
       white-space: nowrap;
     }
-    .canvas-upload-cue {
+    .viz-hint {
       font-size: 0.7rem;
-      color: oklch(65% 0.015 72);
-    }
-    .canvas-viz-hint {
-      font-size: 0.75rem;
-      color: oklch(55% 0.015 72);
-      margin-top: 0.625rem;
+      color: var(--text-3);
       text-align: center;
     }
 
-    /* ── Range sliders ─────────────────────────────────────────────── */
+    /* ── Range sliders ──────────────────────────────────────────────── */
     input[type="range"] {
       appearance: none; width: 100%; height: 3px;
       background: var(--border); border-radius: 2px;
-      cursor: pointer; outline: none; margin: 0.4rem 0 0.25rem; display: block;
+      cursor: pointer; outline: none;
+      margin: 0.4rem 0 0.25rem; display: block;
     }
     input[type="range"]::-webkit-slider-thumb {
       appearance: none; width: 15px; height: 15px; border-radius: 50%;
@@ -205,7 +294,43 @@
     }
     input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
 
-    /* ── D-pad ─────────────────────────────────────────────────────── */
+    /* ── Field labels ───────────────────────────────────────────────── */
+    .field-label {
+      display: block;
+      font-size: 0.8125rem;
+      color: var(--text-2);
+      margin-top: 1rem;
+      margin-bottom: 0.15rem;
+    }
+    .field-label:first-child { margin-top: 0; }
+
+    .badge-val {
+      display: inline-block;
+      font-family: var(--ff-head); font-size: 0.72rem; font-weight: 600;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+      padding: 0 0.4rem; color: var(--text);
+      margin-left: 0.3rem; min-width: 1.8rem; text-align: center;
+      vertical-align: middle;
+    }
+
+    /* ── Radio + checkbox ───────────────────────────────────────────── */
+    .radio-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .radio-row, .check-row {
+      display: flex; align-items: center; gap: 0.55rem;
+      font-size: 0.9rem; cursor: pointer;
+    }
+    .radio-row input, .check-row input {
+      accent-color: var(--accent); width: 1rem; height: 1rem;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .option-hint {
+      font-size: 0.79rem; color: var(--text-2);
+      margin: 0.125rem 0 0 1.55rem; line-height: 1.45;
+    }
+
+    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+
+    /* ── D-pad ──────────────────────────────────────────────────────── */
     .dpad-grid {
       display: grid;
       grid-template-columns: repeat(3, 38px);
@@ -216,52 +341,27 @@
     .zoom-row { display: flex; justify-content: center; gap: 6px; margin-bottom: 0.5rem; }
     #transformText {
       display: block; text-align: center;
-      font-size: 0.8125rem; color: var(--text-2); font-variant-numeric: tabular-nums;
+      font-size: 0.8125rem; color: var(--text-2);
+      font-variant-numeric: tabular-nums;
     }
 
-    /* ── Field labels & badges ─────────────────────────────────────── */
-    .field-label {
-      display: block; font-size: 0.8125rem; color: var(--text-2);
-      margin-top: 1rem; margin-bottom: 0.15rem;
-    }
-    .field-label:first-child { margin-top: 0; }
-    .badge-val {
-      display: inline-block; font-family: var(--ff-head);
-      font-size: 0.75rem; font-weight: 600;
-      background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
-      padding: 0 0.4rem; color: var(--text); margin-left: 0.3rem;
-      min-width: 1.8rem; text-align: center; vertical-align: middle;
-    }
-
-    .radio-group { display: flex; flex-direction: column; gap: 0.45rem; }
-    .radio-row, .check-row {
-      display: flex; align-items: center; gap: 0.55rem;
-      font-size: 0.9rem; cursor: pointer;
-    }
-    .radio-row input, .check-row input {
-      accent-color: var(--accent); width: 1rem; height: 1rem;
-      cursor: pointer; flex-shrink: 0;
-    }
-    .option-hint {
-      font-size: 0.8rem; color: var(--text-2);
-      margin: 0.15rem 0 0 1.55rem; line-height: 1.4;
-    }
-
-    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
-    .hint { font-size: 0.8125rem; color: var(--text-2); margin-top: 0.625rem; }
-
-    /* ── Buttons ───────────────────────────────────────────────────── */
+    /* ── Buttons ────────────────────────────────────────────────────── */
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
       gap: 0.375rem; font-family: var(--ff-body); font-size: 0.9rem; font-weight: 500;
       border: 1px solid transparent; border-radius: var(--r);
       padding: 0.55rem 1rem; cursor: pointer;
-      transition: background .15s, border-color .15s, opacity .15s;
-      white-space: nowrap; text-decoration: none; line-height: 1.4;
+      transition: background .15s, border-color .15s, opacity .15s, box-shadow .15s;
+      white-space: nowrap; line-height: 1.4;
+    }
+    .btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px oklch(52% 0.14 35 / 0.25);
     }
     .btn:active:not(:disabled) { opacity: 0.82; }
-    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
     .btn i { font-size: 0.95em; }
+
     .btn-primary  { background: var(--accent); color: white; }
     .btn-primary:hover:not(:disabled)  { background: var(--accent-hi); }
     .btn-success  { background: var(--success); color: white; }
@@ -271,10 +371,11 @@
     .btn-sm  { font-size: 0.8125rem; padding: 0.35rem 0.7rem; }
     .btn-block { width: 100%; }
 
-    /* ── Progress ──────────────────────────────────────────────────── */
-    .progress-wrap { margin: 0.875rem 0 0; }
+    /* ── Progress ───────────────────────────────────────────────────── */
+    .progress-wrap { margin-top: 0.875rem; }
     .progress-track {
-      height: 26px; background: var(--border); border-radius: var(--r); overflow: hidden;
+      height: 26px; background: var(--border);
+      border-radius: var(--r); overflow: hidden;
     }
     .progress-bar {
       width: 100%; height: 100%;
@@ -293,30 +394,26 @@
       100% { background-position: -200% 0; }
     }
 
-    /* Phase log — shows each completed processing step */
     .phase-log {
-      margin-top: 0.625rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
+      margin-top: 0.5rem;
+      display: flex; flex-direction: column; gap: 0.175rem;
     }
     .phase-entry {
-      display: flex;
-      align-items: baseline;
-      gap: 0.5rem;
-      font-size: 0.8rem;
-      color: var(--text-2);
-      animation: fadeIn .2s ease;
+      display: flex; align-items: baseline; gap: 0.5rem;
+      font-size: 0.79rem; color: var(--text-2);
+      animation: fadeSlide .2s ease;
     }
     .phase-entry .dot {
       width: 5px; height: 5px; border-radius: 50%;
-      background: var(--accent); flex-shrink: 0;
-      position: relative; top: -1px;
+      background: var(--accent); flex-shrink: 0; position: relative; top: -1px;
     }
     .phase-entry.done .dot { background: var(--success); }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; } }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(3px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-    /* ── Result preview ────────────────────────────────────────────── */
+    /* ── Result preview ─────────────────────────────────────────────── */
     .result-section {
       margin-top: 1.125rem;
       padding-top: 1.125rem;
@@ -324,9 +421,8 @@
     }
     .result-label {
       font-family: var(--ff-head);
-      font-size: 0.75rem; font-weight: 500;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--text-2); margin-bottom: 0.5rem;
+      font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-3); margin-bottom: 0.5rem;
     }
     #resultPreview {
       display: block; width: 100%;
@@ -337,19 +433,15 @@
     }
     .result-meta {
       font-size: 0.8125rem; color: var(--text-2);
-      margin-top: 0.5rem;
-      display: flex; gap: 1.25rem; flex-wrap: wrap;
+      margin-top: 0.5rem; display: flex; gap: 1.25rem; flex-wrap: wrap;
     }
-    .result-meta span { display: flex; align-items: center; gap: 0.35rem; }
     .result-confirm {
       margin-top: 0.75rem;
-      font-size: 0.8rem;
-      color: var(--text-2);
+      font-size: 0.8rem; color: var(--text-2);
       background: oklch(96% 0.02 148);
       border: 1px solid oklch(82% 0.06 148);
       border-radius: calc(var(--r) - 2px);
-      padding: 0.5rem 0.75rem;
-      line-height: 1.5;
+      padding: 0.5rem 0.75rem; line-height: 1.5;
     }
 
     .export-note {
@@ -361,8 +453,6 @@
       background: var(--bg); border: 1px solid var(--border);
       border-radius: 3px; padding: 0.1em 0.35em;
     }
-
-    .info-text { font-size: 0.8125rem; color: var(--text-2); margin-top: 0.5rem; }
   </style>
 </head>
 <body>
@@ -375,17 +465,18 @@
 
   <header class="studio-header">
     <h1>MURAL Studio</h1>
-    <p>Offline SVG processor — prepare artwork anywhere, export to the device.</p>
+    <p>Prepare artwork offline — process any SVG and export a commands file for the plotter.</p>
   </header>
 
-  <!-- 01 · Upload ──────────────────────────────────────────────────── -->
+  <!-- ── 01 · Upload ────────────────────────────────────────────────── -->
   <div class="step">
     <div class="step-num">01</div>
     <div class="step-body">
-      <div class="step-label">Upload SVG</div>
+      <div class="step-label">Step one</div>
+      <div class="step-title">Upload SVG</div>
       <p class="step-explainer">
-        Choose the artwork file you want to draw. SVG line art works best —
-        black strokes on a white background. Filled shapes will be traced as outlines.
+        Choose your artwork file. SVG line art works best — black strokes on white.
+        Filled shapes will be traced as outlines.
       </p>
       <div id="dropZone">
         <i class="bi-file-earmark-image drop-icon"></i>
@@ -395,49 +486,83 @@
     </div>
   </div>
 
-  <!-- 02 · Canvas size ─────────────────────────────────────────────── -->
+  <!-- ── 02 · Canvas ────────────────────────────────────────────────── -->
   <div class="step">
     <div class="step-num">02</div>
     <div class="step-body">
-      <div class="step-label">Canvas Size</div>
+      <div class="step-label">Step two</div>
+      <div class="step-title">Canvas Size</div>
       <p class="step-explainer">
-        Set how large the drawing will be on the wall, in millimeters.
-        A good starting point is <strong>60 % of your pin-to-pin distance</strong>
-        for width — this leaves enough margin on both sides for the belt geometry to
-        stay accurate.
+        Enter your <strong>pin-to-pin distance</strong> — this is the full plottable span
+        and becomes the outer boundary. The canvas is your actual drawing area inside it;
+        it starts at maximum and you can shrink it. All coordinates are generated in mm at
+        this physical scale.
       </p>
-      <div class="canvas-inputs-row">
-        <label for="canvasWidth">Width (mm)</label>
-        <input type="number" id="canvasWidth" value="700" min="100" max="4000">
-        <label for="canvasHeight">Height (mm)</label>
-        <input type="number" id="canvasHeight" placeholder="auto" min="100" max="4000">
+
+      <div class="field-row">
+        <div class="field-group">
+          <label for="wallDistance">Pin-to-pin</label>
+          <input type="number" id="wallDistance" placeholder="e.g. 1200 mm" min="200" max="8000">
+        </div>
+        <div class="field-group">
+          <label for="canvasWidth">Canvas width</label>
+          <input type="number" id="canvasWidth" value="700" min="100" max="4000">
+        </div>
+        <div class="field-group">
+          <label for="canvasHeight">Height</label>
+          <input type="number" id="canvasHeight" placeholder="auto" min="100" max="4000">
+        </div>
       </div>
-      <!-- Live canvas preview — artwork appears here once uploaded -->
-      <div class="canvas-viz-wrap">
-        <div id="canvasVizBox">
-          <!-- Artwork fills this frame; clips at boundary -->
-          <img id="canvasPreviewImg" style="display:none;" alt="Canvas preview">
-          <!-- Placeholder shown before any SVG is loaded -->
-          <div id="canvasEmptyState">
-            <span id="canvasVizLabel">700 × auto mm</span>
-            <span class="canvas-upload-cue">Upload an SVG to preview it here</span>
+
+      <!-- Two-frame canvas visualiser -->
+      <div class="canvas-viz-area">
+        <!--
+          #wallContext sizes to pin-to-pin width (px).
+          #canvasVizBox inside it sizes to canvas width proportionally.
+          When no pin-to-pin: wallContext == canvasVizBox visually.
+        -->
+        <div id="wallContext" class="no-wall">
+          <div id="canvasVizBox">
+            <img id="canvasPreviewImg" style="display:none;" alt="Canvas preview">
+            <div id="canvasEmptyState">
+              <span class="empty-dim" id="canvasVizLabel">700 mm wide</span>
+              <span class="empty-cue">Upload an SVG to see it here</span>
+            </div>
           </div>
         </div>
-        <p class="canvas-viz-hint" id="canvasVizHint">Landscape · 1:1</p>
+        <div class="viz-labels">
+          <!-- Canvas measurement row (always shown) -->
+          <div class="meas-row" id="canvasMeasRow">
+            <span class="meas-tick"></span>
+            <span class="meas-line"></span>
+            <span class="meas-label" id="canvasMeasLabel">700 mm</span>
+            <span class="meas-line"></span>
+            <span class="meas-tick"></span>
+          </div>
+          <!-- Wall measurement row (shown only when pin-to-pin entered) -->
+          <div class="meas-row" id="wallMeasRow" style="display:none;">
+            <span class="meas-tick"></span>
+            <span class="meas-line"></span>
+            <span class="meas-label" id="wallMeasLabel">— mm wall</span>
+            <span class="meas-line"></span>
+            <span class="meas-tick"></span>
+          </div>
+          <p class="viz-hint" id="canvasVizHint">Enter pin-to-pin distance above to see wall context</p>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- 03 · Position & Zoom — shown only after SVG is loaded ────────── -->
+  <!-- ── 03 · Position — appears after SVG is loaded ────────────────── -->
   <div class="step" id="positionCard" style="display:none;">
     <div class="step-num">03</div>
     <div class="step-body">
-      <div class="step-label">Position &amp; Zoom</div>
+      <div class="step-label">Step three</div>
+      <div class="step-title">Position &amp; Zoom</div>
       <p class="step-explainer">
-        Shift or scale the artwork <em>within</em> the fixed canvas.
-        The canvas dimensions stay the same — only where the artwork sits inside
-        them changes. Use this to centre the subject or zoom in to fill the space.
-        Artwork outside the canvas boundary will be clipped.
+        Move and scale the artwork within the canvas. The canvas boundary stays fixed —
+        only the artwork shifts. Panning down expands the canvas downward to include
+        everything. Use Reset to start over.
       </p>
       <div class="dpad-grid">
         <div class="empty"></div>
@@ -459,49 +584,44 @@
     </div>
   </div>
 
-  <!-- 04 · Processing Options ─────────────────────────────────────── -->
+  <!-- ── 04 · Options ───────────────────────────────────────────────── -->
   <div class="step">
     <div class="step-num">04</div>
     <div class="step-body">
-      <div class="step-label">Processing Options</div>
+      <div class="step-label">Step four</div>
+      <div class="step-title">Processing Options</div>
       <p class="step-explainer">
-        Choose how to convert the SVG into plotter paths, then tune the output.
-        You can re-process with different settings as many times as you like before exporting.
+        Choose how to convert the artwork into pen paths. You can re-process with
+        different settings before exporting — it doesn't affect the uploaded file.
       </p>
 
       <span class="field-label" style="margin-top:0;">Render mode</span>
-      <div class="radio-group" style="margin-bottom: 0.25rem;">
+      <div class="radio-group" style="margin-bottom:0.25rem;">
         <div>
           <label class="radio-row">
             <input type="radio" name="renderMode" id="modePathTracing" value="pathTracing" checked>
             Path Tracing
           </label>
-          <p class="option-hint">Follows SVG paths directly. Fast and clean. Best for line art.</p>
+          <p class="option-hint">Follows SVG paths directly. Fast and accurate. Best for line art.</p>
         </div>
         <div>
           <label class="radio-row">
             <input type="radio" name="renderMode" id="modeVRV" value="vrv">
             Vector → Raster → Vector
           </label>
-          <p class="option-hint">Rasterises first, then re-traces. Preserves varying stroke widths but takes longer.</p>
+          <p class="option-hint">Rasterises first, then re-traces. Preserves stroke widths but takes longer.</p>
         </div>
       </div>
 
-      <span class="field-label">
-        Infill density <span class="badge-val" id="infillValue">0</span>
-      </span>
+      <span class="field-label">Infill density <span class="badge-val" id="infillValue">0</span></span>
       <input type="range" min="0" max="4" step="1" id="infillDensity" value="0">
-      <p class="option-hint" style="margin-left:0;">
-        0 = outlines only. Higher values add horizontal fill lines inside closed shapes.
-      </p>
+      <p class="option-hint" style="margin-left:0;">0 = outlines only. Higher values fill closed shapes with horizontal lines.</p>
 
       <div id="vrvOptions" style="display:none;">
         <div class="divider"></div>
-        <span class="field-label" style="margin-top:0;">
-          Despeckle <span class="badge-val" id="despeckleValue">2</span>
-        </span>
+        <span class="field-label" style="margin-top:0;">Despeckle <span class="badge-val" id="despeckleValue">2</span></span>
         <input type="range" min="2" max="200" step="11" id="turdSize" value="2">
-        <p class="option-hint" style="margin-left:0;">Removes small noise blobs that appear during rasterisation.</p>
+        <p class="option-hint" style="margin-left:0;">Removes small noise blobs from the rasterised image.</p>
       </div>
 
       <div id="pathTracingOptions">
@@ -515,15 +635,16 @@
     </div>
   </div>
 
-  <!-- 05 · Process & Export ────────────────────────────────────────── -->
+  <!-- ── 05 · Process & Export ─────────────────────────────────────── -->
   <div class="step">
     <div class="step-num">05</div>
     <div class="step-body">
-      <div class="step-label">Process &amp; Export</div>
+      <div class="step-label">Step five</div>
+      <div class="step-title">Process &amp; Export</div>
       <p class="step-explainer">
-        Click <strong>Process SVG</strong> to convert your artwork into plotter commands.
-        Processing runs in your browser — it may take 10–60 seconds for complex files.
-        Review the path preview before exporting.
+        Processing runs entirely in your browser — no internet needed.
+        It may take 10–60 seconds for complex artwork. Review the path preview
+        before exporting.
       </p>
 
       <button class="btn btn-primary btn-block" id="processBtn" disabled>
@@ -535,18 +656,16 @@
           <div class="progress-bar progress-bar-striped progress-bar-animated"
                id="progressBar">Starting…</div>
         </div>
-        <!-- Phase log — each status message appears as a new line -->
         <div class="phase-log" id="phaseLog"></div>
       </div>
 
-      <!-- Result preview — shown after processing completes -->
       <div id="resultSection" class="result-section" style="display:none;">
         <div class="result-label">Drawing path preview</div>
         <img id="resultPreview" alt="Processed drawing path preview">
         <div class="result-meta" id="resultMeta"></div>
         <div class="result-confirm">
-          Check that the preview looks right — all paths traced, artwork in the correct position.
-          If something is off, adjust the settings above and click <strong>Process SVG</strong> again.
+          Check that all paths are traced and the artwork is positioned correctly.
+          If something looks off, adjust the settings above and process again.
         </div>
       </div>
 
@@ -564,7 +683,7 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// SVG control
+// SVG control — mirrors device svgControl.js exactly
 // ═══════════════════════════════════════════════════════════════════════════
 
 const renderScale      = 2;
@@ -582,7 +701,7 @@ function resetTransform() {
     affineTransform = [1, 0, 0, 1, 0, 0];
 }
 
-// btoa only handles Latin-1; encode as UTF-8 first to support any SVG content
+// Encode SVG string safely for use in a data URL (handles UTF-8 characters)
 function svgToDataURL(str) {
     return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(str)));
 }
@@ -590,37 +709,49 @@ function svgToDataURL(str) {
 function applyTransform() {
     if (!originalSvgDoc) return;
     updateTransformText();
-    const [cloned] = makeTransformedSvgWithHeight();
+    const [cloned, newHeight] = makeTransformedSvgWithHeight();
+    targetHeight = newHeight;   // keep in sync; canvas grows when panning down
     const str = new XMLSerializer().serializeToString(cloned);
     document.getElementById('canvasPreviewImg').src = svgToDataURL(str);
 }
 
-// Pure transform — canvas dimensions never change, artwork clips at boundary.
+// Matches device svgControl.js makeTransformedSvgWithHeight exactly:
+// panning down (t[5] > 0) expands the canvas height so all shifted artwork
+// is included in the plotter output — consistent with on-device behaviour.
 function makeTransformedSvgWithHeight() {
     const cloned = originalSvgDoc.cloneNode(true);
     const el     = cloned.documentElement;
     const vbAttr = el.getAttribute('viewBox');
-    if (!vbAttr) throw new Error('SVG is missing a viewBox — cannot transform.');
+    if (!vbAttr) throw new Error('SVG is missing a viewBox.');
     const vb  = vbAttr.split(/[\s,]+/).filter(Boolean);
     const vbW = parseFloat(vb[2]);
     const vbH = parseFloat(vb[3]);
 
     const t = [...affineTransform];
     t[4] = t[4] * vbW;
-    t[5] = t[5] * vbH;
+
+    let newH = parseFloat(el.getAttribute('height'));
+    if (t[5] > 0) {
+        const heightOffset = t[5] * newH;
+        newH = newH + heightOffset;
+        el.setAttribute('height', newH);
+        t[5] = t[5] * vbH;
+        vb[3] = String(vbH + t[5]);
+        el.setAttribute('viewBox', vb.join(', '));
+    } else {
+        t[5] = t[5] * vbH;
+    }
 
     const group = cloned.getElementById(transformGroupID);
-    if (!group) throw new Error('Transform group not found — was normalizeSvg() called?');
+    if (!group) throw new Error('Transform group missing — was normalizeSvg() called?');
     group.setAttribute('transform', `matrix(${t.join(',')})`);
-
-    return [cloned, parseFloat(el.getAttribute('height'))];
+    return [cloned, newH];
 }
 
 function updateTransformText() {
     const n = v => +v.toFixed(2);
     document.getElementById('transformText').textContent =
-        `offset (${n(affineTransform[4]*100)}, ${n(affineTransform[5]*100)})  ` +
-        `zoom ${n(affineTransform[0])}×`;
+        `offset (${n(affineTransform[4]*100)}, ${n(affineTransform[5]*100)})  zoom ${n(affineTransform[0])}×`;
 }
 
 function convertUnitsToPx(dim) {
@@ -647,7 +778,7 @@ function normalizeSvg() {
     } else {
         el.setAttribute('viewBox', `0,0,${intrW},${intrH}`);
     }
-    if (!intrW || !intrH) throw new Error('Cannot determine SVG dimensions');
+    if (!intrW || !intrH) throw new Error('Cannot determine SVG dimensions.');
 
     targetWidth  = parseInt(document.getElementById('canvasWidth').value) || 700;
     const autoH  = targetWidth / intrW * intrH;
@@ -656,10 +787,8 @@ function normalizeSvg() {
 
     document.getElementById('canvasHeight').placeholder = Math.round(autoH) + ' (auto)';
 
-    // Fix canvas dimensions; overflow clips automatically
     el.setAttribute('width',  String(targetWidth));
     el.setAttribute('height', String(targetHeight));
-    el.setAttribute('overflow', 'hidden');
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.id = transformGroupID;
@@ -673,8 +802,7 @@ function setSvgString(svgString) {
     resetTransform();
     rawSvgString   = svgString;
     const doc = new DOMParser().parseFromString(svgString, 'image/svg+xml');
-    // DOMParser never throws — check for a parse error element instead
-    if (doc.querySelector('parsererror')) {
+    if (doc.querySelector('parseerror, parsererror')) {
         workerError({ message: 'The file could not be parsed as SVG.' });
         return;
     }
@@ -729,7 +857,7 @@ async function getCurrentSvgImageData() {
 
 function convertJsonToDataURL(json, w, h) {
     const canvas = document.createElement('canvas');
-    canvas.width  = w; canvas.height = h;
+    canvas.width = w; canvas.height = h;
     canvas.style.display = 'none';
     document.body.appendChild(canvas);
     try {
@@ -740,42 +868,83 @@ function convertJsonToDataURL(json, w, h) {
         paper.project.remove();
         return url;
     } finally {
-        // always remove the canvas even if paper throws
         if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Canvas proportion visualiser
+// Canvas visualiser
 // ═══════════════════════════════════════════════════════════════════════════
 
+// WALL_PX: fixed pixel width of the outer wall context frame.
+// The inner canvas frame is sized proportionally inside it.
+const WALL_PX = 300;
+
 function updateCanvasViz() {
-    const w = parseInt(document.getElementById('canvasWidth').value)  || 700;
-    const h = Math.max(1, parseInt(document.getElementById('canvasHeight').value) || Math.round(targetHeight) || w);
-    const safeW = Math.max(1, w);
+    const canvasW = Math.max(1, parseInt(document.getElementById('canvasWidth').value)  || 700);
+    const canvasH = Math.max(1, parseInt(document.getElementById('canvasHeight').value) || Math.round(targetHeight) || canvasW);
+    const wallW   = Math.max(1, parseInt(document.getElementById('wallDistance').value) || 0);
 
-    const maxW = 300, maxH = 160;
-    const aspect = safeW / h;
+    const wallCtx   = document.getElementById('wallContext');
+    const box       = document.getElementById('canvasVizBox');
+    const lbl       = document.getElementById('canvasVizLabel');
+    const hint      = document.getElementById('canvasVizHint');
+    const wallRow   = document.getElementById('wallMeasRow');
+    const wallLbl   = document.getElementById('wallMeasLabel');
+    const canvasRow = document.getElementById('canvasMeasRow');
+    const canvasLbl = document.getElementById('canvasMeasLabel');
 
-    let boxW, boxH;
-    if (aspect >= maxW / maxH) {
-        boxW = maxW; boxH = Math.round(maxW / aspect);
+    const hasWall = wallW > 0;
+
+    if (hasWall) {
+        // --- two-frame mode ---
+        // Wall context: full WALL_PX wide
+        // Canvas box: proportional fraction of wall width
+        const ratio    = Math.min(canvasW / wallW, 1);
+        const boxWpx   = Math.max(32, Math.round(WALL_PX * ratio));
+        const boxHpx   = Math.max(20, Math.round(boxWpx * canvasH / canvasW));
+        const wallHpx  = boxHpx + 24;  // wall frame taller by 12px top+bottom
+
+        wallCtx.className = 'has-wall';
+        wallCtx.style.width  = WALL_PX + 'px';
+        wallCtx.style.height = wallHpx + 'px';
+        box.style.width  = boxWpx + 'px';
+        box.style.height = boxHpx + 'px';
+
+        // Measurement rows
+        wallRow.style.display  = '';
+        wallRow.style.width    = WALL_PX + 'px';
+        wallLbl.textContent    = wallW + ' mm (wall)';
+        canvasRow.style.width  = boxWpx + 'px';
+        canvasLbl.textContent  = canvasW + ' mm';
+
+        hint.textContent = `Canvas is ${Math.round(ratio*100)}% of wall width`;
     } else {
-        boxH = maxH; boxW = Math.round(maxH * aspect);
+        // --- canvas-only mode ---
+        const aspect = canvasW / canvasH;
+        const maxH   = 180;
+        let boxWpx, boxHpx;
+        if (aspect >= WALL_PX / maxH) {
+            boxWpx = WALL_PX; boxHpx = Math.round(WALL_PX / aspect);
+        } else {
+            boxHpx = maxH; boxWpx = Math.round(maxH * aspect);
+        }
+        boxWpx = Math.max(boxWpx, 40); boxHpx = Math.max(boxHpx, 24);
+
+        wallCtx.className = 'no-wall';
+        wallCtx.style.width  = boxWpx + 'px';
+        wallCtx.style.height = boxHpx + 'px';
+        box.style.width  = boxWpx + 'px';
+        box.style.height = boxHpx + 'px';
+
+        wallRow.style.display  = 'none';
+        canvasRow.style.width  = boxWpx + 'px';
+        canvasLbl.textContent  = canvasW + ' mm';
+
+        hint.textContent = 'Enter pin-to-pin distance above to see wall context';
     }
-    boxW = Math.max(boxW, 40); boxH = Math.max(boxH, 24);
 
-    const box  = document.getElementById('canvasVizBox');
-    const lbl  = document.getElementById('canvasVizLabel');
-    const hint = document.getElementById('canvasVizHint');
-
-    box.style.width  = boxW + 'px';
-    box.style.height = boxH + 'px';
-
-    lbl.textContent  = `${safeW} × ${h} mm`;
-    hint.textContent = aspect >= 1
-        ? `Landscape  ·  ${(safeW/h).toFixed(2)}:1`
-        : `Portrait  ·  1:${(h/safeW).toFixed(2)}`;
+    lbl.textContent = `${canvasW} × ${canvasH} mm`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -785,11 +954,8 @@ function updateCanvasViz() {
 let currentWorker     = null;
 let exportCommandsStr = null;
 
-// Appends a new line to the phase log and updates the progress bar text.
-// Each call records a timestamped step so the user can see progress accumulating.
 function setStatus(text) {
     document.getElementById('progressBar').textContent = text;
-
     const log   = document.getElementById('phaseLog');
     const entry = document.createElement('div');
     entry.className = 'phase-entry';
@@ -797,8 +963,15 @@ function setStatus(text) {
     const span = document.createElement('span'); span.textContent = text;
     entry.appendChild(dot); entry.appendChild(span);
     log.appendChild(entry);
-    // Keep only the last 6 lines so it doesn't grow indefinitely
     while (log.children.length > 6) log.removeChild(log.firstChild);
+}
+
+function workerError(e) {
+    const msg = e.message || 'Worker failed to load — is worker.js present?';
+    const bar = document.getElementById('progressBar');
+    bar.classList.remove('progress-bar-animated');
+    bar.style.background = 'oklch(52% 0.18 25)';
+    bar.textContent = 'Error: ' + msg;
 }
 
 function startProcessing() {
@@ -811,7 +984,7 @@ function startProcessing() {
     document.getElementById('phaseLog').innerHTML = '';
 
     const bar = document.getElementById('progressBar');
-    bar.style.background = '';   // clear any inline error colour from a previous run
+    bar.style.background = '';
     bar.classList.add('progress-bar-striped', 'progress-bar-animated');
     bar.classList.remove('bg-success');
     bar.textContent = 'Starting…';
@@ -819,19 +992,7 @@ function startProcessing() {
     if (currentWorker) { currentWorker.terminate(); currentWorker = null; }
 
     const mode = document.querySelector('input[name="renderMode"]:checked').value;
-    if (mode === 'vrv') {
-        processVRV();
-    } else {
-        processPathTracing();
-    }
-}
-
-function workerError(e) {
-    const msg = e.message || 'Worker failed to load — is worker.js present?';
-    const bar = document.getElementById('progressBar');
-    bar.classList.remove('progress-bar-animated');
-    bar.style.background = 'oklch(52% 0.18 25)';
-    bar.textContent = 'Error: ' + msg;
+    if (mode === 'vrv') { processVRV(); } else { processPathTracing(); }
 }
 
 function processPathTracing() {
@@ -839,14 +1000,12 @@ function processPathTracing() {
     currentWorker = new Worker('./worker.js');
     currentWorker.onerror = workerError;
 
-    // getSvgJson runs Paper.js synchronously on the main thread and can take
-    // several seconds for complex files. Yield first so the status text renders.
     setTimeout(() => {
         try {
             const renderSvg = getRenderSvg();
             const svgString = new XMLSerializer().serializeToString(renderSvg);
             setStatus('Importing SVG…');
-            const svgJson   = getSvgJson(svgString);
+            const svgJson = getSvgJson(svgString);
             setStatus('Sending to worker…');
             currentWorker.onmessage = handleWorkerMessage;
             currentWorker.postMessage({
@@ -881,8 +1040,7 @@ async function processVRV() {
                 setStatus(e.data.payload);
             } else if (e.data.type === 'vectorizer') {
                 try {
-                    const vSvgStr = e.data.payload.svg;
-                    const svgJson = getSvgJson(vSvgStr);
+                    const svgJson = getSvgJson(e.data.payload.svg);
                     currentWorker.onmessage = handleWorkerMessage;
                     currentWorker.postMessage({
                         type:          'renderSvg',
@@ -897,7 +1055,7 @@ async function processVRV() {
                         flattenPaths:  false,
                     });
                 } catch (err) {
-                    workerError({ message: 'VRV vectorizer step failed: ' + err.message });
+                    workerError({ message: 'Vectorizer step failed: ' + err.message });
                 }
             }
         };
@@ -913,32 +1071,26 @@ function handleWorkerMessage(e) {
         setStatus(e.data.payload);
     } else if (e.data.type === 'renderer') {
         const { commands, svgJson, distance, drawDistance } = e.data.payload;
-
         exportCommandsStr = commands.join('\n');
 
-        // Mark progress as done
         const bar = document.getElementById('progressBar');
         bar.classList.remove('progress-bar-striped', 'progress-bar-animated');
         bar.classList.add('bg-success');
         bar.textContent = 'Done!';
 
-        // Mark last phase entry as done
         const log = document.getElementById('phaseLog');
         if (log.lastChild) log.lastChild.classList.add('done');
 
-        // Render result preview
         try {
             const url = convertJsonToDataURL(svgJson, targetWidth, targetHeight);
-            const img = document.getElementById('resultPreview');
-            img.src   = url;
-        } catch (e) {
-            // Preview failed but commands are still valid — show a warning
-            document.getElementById('resultPreview').alt = 'Preview unavailable: ' + e.message;
+            document.getElementById('resultPreview').src = url;
+        } catch (err) {
+            document.getElementById('resultPreview').alt = 'Preview unavailable: ' + err.message;
         }
 
         const totalM = +(distance     / 1000).toFixed(1);
         const drawM  = +(drawDistance / 1000).toFixed(1);
-        const meta = document.getElementById('resultMeta');
+        const meta   = document.getElementById('resultMeta');
         meta.textContent = '';
         const t1 = document.createElement('span'); t1.textContent = `Total travel: ${totalM} m`;
         const t2 = document.createElement('span'); t2.textContent = `Drawing: ${drawM} m`;
@@ -970,7 +1122,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const fileInput = document.getElementById('svgFileInput');
 
     dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
     dropZone.addEventListener('drop', async e => {
         e.preventDefault(); dropZone.classList.remove('drag-over');
@@ -988,7 +1140,19 @@ document.addEventListener('DOMContentLoaded', function () {
         setSvgString(text);
     }
 
-    document.getElementById('canvasWidth').addEventListener('change', () => { reNormalize(); updateCanvasViz(); });
+    // Pin-to-pin: sets canvas width to full wall width by default
+    document.getElementById('wallDistance').addEventListener('input', function () {
+        const wall = Math.max(1, parseInt(this.value) || 0);
+        if (wall > 0) {
+            document.getElementById('canvasWidth').value = wall;
+            reNormalize();
+        }
+        updateCanvasViz();
+    });
+
+    document.getElementById('canvasWidth').addEventListener('change', () => {
+        reNormalize(); updateCanvasViz();
+    });
     document.getElementById('canvasHeight').addEventListener('change', function () {
         updateCanvasViz();
         if (!rawSvgString) return;
@@ -999,12 +1163,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.getElementById('panUp').addEventListener('click',    () => { affineTransform[5] -= nudgeByFactor; applyTransform(); });
-    document.getElementById('panDown').addEventListener('click',   () => { affineTransform[5] += nudgeByFactor; applyTransform(); });
-    document.getElementById('panLeft').addEventListener('click',   () => { affineTransform[4] -= nudgeByFactor; applyTransform(); });
-    document.getElementById('panRight').addEventListener('click',  () => { affineTransform[4] += nudgeByFactor; applyTransform(); });
-    document.getElementById('zoomIn').addEventListener('click',    () => { affineTransform[0] += zoomByFactor; affineTransform[3] += zoomByFactor; applyTransform(); });
-    document.getElementById('zoomOut').addEventListener('click',   () => { affineTransform[0] -= zoomByFactor; affineTransform[3] -= zoomByFactor; applyTransform(); });
+    document.getElementById('panUp'   ).addEventListener('click', () => { affineTransform[5] -= nudgeByFactor; applyTransform(); });
+    document.getElementById('panDown' ).addEventListener('click', () => { affineTransform[5] += nudgeByFactor; applyTransform(); });
+    document.getElementById('panLeft' ).addEventListener('click', () => { affineTransform[4] -= nudgeByFactor; applyTransform(); });
+    document.getElementById('panRight').addEventListener('click', () => { affineTransform[4] += nudgeByFactor; applyTransform(); });
+    document.getElementById('zoomIn'  ).addEventListener('click', () => { affineTransform[0] += zoomByFactor; affineTransform[3] += zoomByFactor; applyTransform(); });
+    document.getElementById('zoomOut' ).addEventListener('click', () => { affineTransform[0] -= zoomByFactor; affineTransform[3] -= zoomByFactor; applyTransform(); });
     document.getElementById('resetTransform').addEventListener('click', () => { resetTransform(); applyTransform(); });
 
     document.querySelectorAll('input[name="renderMode"]').forEach(r => {
@@ -1025,7 +1189,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('processBtn').addEventListener('click', startProcessing);
     document.getElementById('exportBtn').addEventListener('click', exportCommands);
 
-    // Initialise canvas viz on load
     updateCanvasViz();
 });
 </script>
