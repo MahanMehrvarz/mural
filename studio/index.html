@@ -4,163 +4,503 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MURAL Studio</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
   <style>
-    body { background: #f8f9fa; }
-    .card { margin-bottom: 1rem; }
-    #sourceSvgImg {
-      width: 100%; max-height: 260px; object-fit: contain;
-      background: #fff; border: 1px solid #dee2e6; border-radius: 4px;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         oklch(96.5% 0.01  72);
+      --surface:    oklch(99%   0.005 72);
+      --border:     oklch(88%   0.015 72);
+      --text:       oklch(20%   0.02 260);
+      --text-2:     oklch(50%   0.015 270);
+      --accent:     oklch(52%   0.14  35);
+      --accent-hi:  oklch(44%   0.13  35);
+      --success:    oklch(52%   0.13 148);
+      --num-dim:    oklch(87%   0.018 72);
+      --r:          8px;
+      --ff-head:    'Space Grotesk', sans-serif;
+      --ff-body:    'DM Sans', sans-serif;
     }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--ff-body);
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Page wrapper ──────────────────────────────────────────────── */
+    .studio {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: clamp(1.75rem, 5vw, 3.5rem) 1.25rem clamp(3rem, 8vw, 5rem);
+    }
+
+    /* ── Header ────────────────────────────────────────────────────── */
+    .studio-header { margin-bottom: clamp(2.25rem, 6vw, 4rem); }
+
+    .studio-header h1 {
+      font-family: var(--ff-head);
+      font-size: clamp(1.625rem, 4vw, 2.125rem);
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+      color: var(--text);
+    }
+
+    .studio-header p {
+      margin-top: 0.4rem;
+      font-size: 0.875rem;
+      color: var(--text-2);
+    }
+
+    /* ── Steps ─────────────────────────────────────────────────────── */
+    .step {
+      display: grid;
+      grid-template-columns: 2.5rem 1fr;
+      column-gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .step-num {
+      font-family: var(--ff-head);
+      font-size: 1.375rem;
+      font-weight: 600;
+      color: var(--num-dim);
+      line-height: 1;
+      padding-top: 1.125rem;   /* aligns with step-label text */
+      text-align: right;
+      user-select: none;
+    }
+
+    .step-body {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 1.125rem 1.375rem 1.25rem;
+    }
+
+    .step-label {
+      font-family: var(--ff-head);
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: 0.875rem;
+    }
+
+    /* ── Drop zone ─────────────────────────────────────────────────── */
+    #dropZone {
+      border: 1.5px dashed var(--border);
+      border-radius: calc(var(--r) - 1px);
+      padding: 2rem 1.25rem;
+      text-align: center;
+      color: var(--text-2);
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: border-color .2s, background .2s, color .2s;
+    }
+    #dropZone:hover     { border-color: var(--accent); color: var(--text); }
+    #dropZone.drag-over { border-color: var(--accent); background: oklch(97.5% 0.02 35); color: var(--accent); }
+    #dropZone.has-file  { border-color: var(--success); color: var(--success); }
+
+    .drop-icon {
+      font-size: 1.75rem;
+      display: block;
+      margin-bottom: 0.4rem;
+      opacity: 0.4;
+      transition: opacity .2s;
+    }
+    #dropZone.has-file .drop-icon { opacity: 0.9; }
+
+    /* ── Preview images ────────────────────────────────────────────── */
+    #sourceSvgImg,
     #resultPreview {
-      width: 100%; max-height: 260px; object-fit: contain;
-      background: #fff; border: 1px solid #dee2e6; border-radius: 4px;
+      display: block;
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--r) - 1px);
+      margin-top: 0.75rem;
     }
+
+    /* ── Number inputs ─────────────────────────────────────────────── */
+    .dim-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 0.875rem;
+    }
+    .dim-row label {
+      font-size: 0.8125rem;
+      color: var(--text-2);
+      white-space: nowrap;
+    }
+
+    input[type="number"] {
+      width: 88px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: calc(var(--r) - 2px);
+      padding: 0.4rem 0.6rem;
+      font-family: var(--ff-body);
+      font-size: 0.9rem;
+      color: var(--text);
+      outline: none;
+      appearance: none;
+      transition: border-color .15s;
+    }
+    input[type="number"]:focus { border-color: var(--accent); }
+
+    .hint { font-size: 0.8125rem; color: var(--text-2); margin-top: 0.625rem; }
+
+    /* ── D-pad ─────────────────────────────────────────────────────── */
     .dpad-grid {
       display: grid;
-      grid-template-columns: repeat(3, 44px);
-      grid-template-rows: repeat(3, 44px);
+      grid-template-columns: repeat(3, 38px);
+      grid-template-rows:    repeat(3, 38px);
       gap: 3px;
-      margin: 0 auto;
+      margin: 0 auto 0.75rem;
       width: fit-content;
     }
-    .dpad-grid .btn { padding: 0; width: 44px; height: 44px; font-size: 1.1rem; }
-    .dpad-grid .empty { background: transparent; pointer-events: none; }
-    #dropZone {
-      border: 2px dashed #adb5bd; border-radius: 6px;
-      padding: 24px; text-align: center; color: #6c757d;
-      cursor: pointer; transition: border-color .2s, background .2s;
+    .dpad-grid .empty { pointer-events: none; }
+
+    .zoom-row {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 0.5rem;
     }
-    #dropZone.drag-over { border-color: #0d6efd; background: #e7f1ff; }
-    #dropZone.has-file  { border-color: #198754; color: #198754; }
+
+    #transformText {
+      display: block;
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-2);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Range sliders ─────────────────────────────────────────────── */
+    input[type="range"] {
+      appearance: none;
+      width: 100%;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      cursor: pointer;
+      outline: none;
+      margin: 0.4rem 0 0.25rem;
+      display: block;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      transition: transform .15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+
+    /* ── Field labels ──────────────────────────────────────────────── */
+    .field-label {
+      display: block;
+      font-size: 0.8125rem;
+      color: var(--text-2);
+      margin-top: 1rem;
+      margin-bottom: 0.15rem;
+    }
+    .field-label:first-child { margin-top: 0; }
+
+    .badge-val {
+      display: inline-block;
+      font-family: var(--ff-head);
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0 0.4rem;
+      color: var(--text);
+      margin-left: 0.3rem;
+      min-width: 1.8rem;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    /* ── Radio + checkbox ──────────────────────────────────────────── */
+    .radio-group { display: flex; flex-direction: column; gap: 0.45rem; }
+
+    .radio-row,
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .radio-row input,
+    .check-row input {
+      accent-color: var(--accent);
+      width: 1rem; height: 1rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+
+    /* ── Buttons ───────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.375rem;
+      font-family: var(--ff-body);
+      font-size: 0.9rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+      border-radius: var(--r);
+      padding: 0.55rem 1rem;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, opacity .15s;
+      white-space: nowrap;
+      text-decoration: none;
+      line-height: 1.4;
+    }
+    .btn:active:not(:disabled) { opacity: 0.82; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+    .btn i { font-size: 0.95em; }
+
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hi); }
+
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover:not(:disabled) { background: oklch(46% 0.13 148); }
+
+    .btn-outline { background: transparent; color: var(--text); border-color: var(--border); }
+    .btn-outline:hover:not(:disabled) { border-color: var(--text-2); }
+
+    .btn-sm { font-size: 0.8125rem; padding: 0.35rem 0.7rem; }
+    .btn-block { width: 100%; }
+
+    /* ── Progress bar ──────────────────────────────────────────────── */
+    .progress-wrap { margin: 0.75rem 0; }
+
+    .progress-track {
+      height: 26px;
+      background: var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    /* progressBar is manipulated directly by the worker JS:
+       - adds/removes .progress-bar-animated for running state
+       - adds .bg-success for done state
+       - sets .textContent for status text                          */
+    .progress-bar {
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: white;
+      background: var(--accent);
+      transition: background .4s;
+    }
+    .progress-bar.progress-bar-animated {
+      background: linear-gradient(
+        90deg,
+        var(--accent) 0%,
+        oklch(63% 0.14 35) 50%,
+        var(--accent) 100%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.8s infinite linear;
+    }
+    .progress-bar.bg-success {
+      background: var(--success);
+      animation: none;
+    }
+    @keyframes shimmer {
+      0%   { background-position:  200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Info / notes ──────────────────────────────────────────────── */
+    .info-text {
+      font-size: 0.8125rem;
+      color: var(--text-2);
+      margin-top: 0.5rem;
+    }
+    .export-note {
+      font-size: 0.8125rem;
+      color: var(--text-2);
+      margin-top: 0.75rem;
+      line-height: 1.55;
+    }
+    .export-note code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.8em;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.1em 0.35em;
+    }
   </style>
 </head>
 <body>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"
-  integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa"
-  crossorigin="anonymous"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.17/paper-full.min.js"
   integrity="sha512-NApOOz1j2Dz1PKsIvg1hrXLzDFd62+J0qOPIhm8wueAnk4fQdSclq6XvfzvejDs6zibSoDC+ipl1dC66m+EoSQ=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-<div class="container py-4" style="max-width: 660px;">
-  <h2 class="mb-1">MURAL Studio</h2>
-  <p class="text-muted mb-4">Offline SVG processor — run anywhere, export to the device.</p>
+<div class="studio">
 
-  <!-- ── 1. Upload ─────────────────────────────────────────────────────── -->
-  <div class="card">
-    <div class="card-header fw-semibold">1 · Upload SVG</div>
-    <div class="card-body">
+  <header class="studio-header">
+    <h1>MURAL Studio</h1>
+    <p>Offline SVG processor — prepare artwork anywhere, export to the device.</p>
+  </header>
+
+  <!-- 01 · Upload ──────────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-num">01</div>
+    <div class="step-body">
+      <div class="step-label">Upload SVG</div>
       <div id="dropZone">
-        <i class="bi-file-earmark-image fs-2 d-block mb-1"></i>
+        <i class="bi-file-earmark-image drop-icon"></i>
         <span id="dropLabel">Drop an SVG here, or click to browse</span>
         <input type="file" id="svgFileInput" accept=".svg" style="display:none;">
       </div>
-      <img id="sourceSvgImg" class="mt-2" style="display:none;">
+      <img id="sourceSvgImg" style="display:none;">
     </div>
   </div>
 
-  <!-- ── 2. Canvas size ────────────────────────────────────────────────── -->
-  <div class="card">
-    <div class="card-header fw-semibold">2 · Canvas Size</div>
-    <div class="card-body">
-      <div class="row g-3 align-items-center mb-2">
-        <div class="col-auto"><label class="col-form-label" for="canvasWidth">Width (mm)</label></div>
-        <div class="col-3">
-          <input type="number" class="form-control" id="canvasWidth" value="700" min="100" max="4000">
-        </div>
-        <div class="col-auto"><label class="col-form-label" for="canvasHeight">Height (mm)</label></div>
-        <div class="col-3">
-          <input type="number" class="form-control" id="canvasHeight" placeholder="auto" min="100" max="4000">
-        </div>
+  <!-- 02 · Canvas size ─────────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-num">02</div>
+    <div class="step-body">
+      <div class="step-label">Canvas Size</div>
+      <div class="dim-row">
+        <label for="canvasWidth">Width (mm)</label>
+        <input type="number" id="canvasWidth" value="700" min="100" max="4000">
+        <label for="canvasHeight">Height (mm)</label>
+        <input type="number" id="canvasHeight" placeholder="auto" min="100" max="4000">
       </div>
-      <small class="text-muted">Tip: canvas width ≈ 60 % of your pin-to-pin wall distance.</small>
+      <p class="hint">Canvas width ≈ 60 % of your pin-to-pin wall distance.</p>
     </div>
   </div>
 
-  <!-- ── 3. Position ───────────────────────────────────────────────────── -->
-  <div class="card" id="positionCard" style="display:none;">
-    <div class="card-header fw-semibold">3 · Position &amp; Zoom</div>
-    <div class="card-body text-center">
-      <div class="dpad-grid mb-2">
+  <!-- 03 · Position & Zoom — shown only after SVG is loaded ────────── -->
+  <div class="step" id="positionCard" style="display:none;">
+    <div class="step-num">03</div>
+    <div class="step-body">
+      <div class="step-label">Position &amp; Zoom</div>
+      <div class="dpad-grid">
         <div class="empty"></div>
-        <button class="btn btn-outline-secondary" id="panUp"><i class="bi-arrow-up"></i></button>
+        <button class="btn btn-outline" id="panUp"   ><i class="bi-arrow-up"></i></button>
         <div class="empty"></div>
-        <button class="btn btn-outline-secondary" id="panLeft"><i class="bi-arrow-left"></i></button>
+        <button class="btn btn-outline" id="panLeft" ><i class="bi-arrow-left"></i></button>
         <div class="empty"></div>
-        <button class="btn btn-outline-secondary" id="panRight"><i class="bi-arrow-right"></i></button>
+        <button class="btn btn-outline" id="panRight"><i class="bi-arrow-right"></i></button>
         <div class="empty"></div>
-        <button class="btn btn-outline-secondary" id="panDown"><i class="bi-arrow-down"></i></button>
+        <button class="btn btn-outline" id="panDown" ><i class="bi-arrow-down"></i></button>
         <div class="empty"></div>
       </div>
-      <div class="btn-group mb-2">
-        <button class="btn btn-outline-secondary btn-sm" id="zoomIn"><i class="bi-zoom-in"></i> In</button>
-        <button class="btn btn-outline-secondary btn-sm" id="zoomOut"><i class="bi-zoom-out"></i> Out</button>
-        <button class="btn btn-outline-secondary btn-sm" id="resetTransform"><i class="bi-arrow-counterclockwise"></i> Reset</button>
+      <div class="zoom-row">
+        <button class="btn btn-outline btn-sm" id="zoomIn"        ><i class="bi-zoom-in"></i> In</button>
+        <button class="btn btn-outline btn-sm" id="zoomOut"       ><i class="bi-zoom-out"></i> Out</button>
+        <button class="btn btn-outline btn-sm" id="resetTransform"><i class="bi-arrow-counterclockwise"></i> Reset</button>
       </div>
-      <div><small class="text-muted" id="transformText"></small></div>
+      <small id="transformText"></small>
     </div>
   </div>
 
-  <!-- ── 4. Options ───────────────────────────────────────────────────── -->
-  <div class="card">
-    <div class="card-header fw-semibold">4 · Processing Options</div>
-    <div class="card-body">
-      <div class="mb-3">
-        <label class="form-label fw-semibold">Render mode</label><br>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="renderMode" id="modePathTracing" value="pathTracing" checked>
-          <label class="form-check-label" for="modePathTracing">Path Tracing</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="renderMode" id="modeVRV" value="vrv">
-          <label class="form-check-label" for="modeVRV">Vector → Raster → Vector</label>
-        </div>
+  <!-- 04 · Processing Options ─────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-num">04</div>
+    <div class="step-body">
+      <div class="step-label">Processing Options</div>
+
+      <span class="field-label" style="margin-top:0;">Render mode</span>
+      <div class="radio-group" style="margin-bottom:0.25rem;">
+        <label class="radio-row">
+          <input type="radio" name="renderMode" id="modePathTracing" value="pathTracing" checked>
+          Path Tracing
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="renderMode" id="modeVRV" value="vrv">
+          Vector → Raster → Vector
+        </label>
       </div>
-      <label class="form-label mb-0">Infill density &nbsp;<span class="badge bg-secondary" id="infillValue">0</span></label>
-      <input type="range" class="form-range mb-3" min="0" max="4" step="1" id="infillDensity" value="0">
+
+      <span class="field-label">
+        Infill density <span class="badge-val" id="infillValue">0</span>
+      </span>
+      <input type="range" min="0" max="4" step="1" id="infillDensity" value="0">
+
       <div id="vrvOptions" style="display:none;">
-        <label class="form-label mb-0">Despeckle &nbsp;<span class="badge bg-secondary" id="despeckleValue">2</span></label>
-        <input type="range" class="form-range mb-3" min="2" max="200" step="11" id="turdSize" value="2">
+        <div class="divider"></div>
+        <span class="field-label" style="margin-top:0;">
+          Despeckle <span class="badge-val" id="despeckleValue">2</span>
+        </span>
+        <input type="range" min="2" max="200" step="11" id="turdSize" value="2">
       </div>
+
       <div id="pathTracingOptions">
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="flattenPaths">
-          <label class="form-check-label" for="flattenPaths">Flatten paths (removes overlapping areas)</label>
-        </div>
+        <div class="divider"></div>
+        <label class="check-row">
+          <input type="checkbox" id="flattenPaths">
+          Flatten paths
+          <span style="color:var(--text-2);font-size:0.85em;">(removes overlapping areas)</span>
+        </label>
       </div>
     </div>
   </div>
 
-  <!-- ── 5. Process & Export ──────────────────────────────────────────── -->
-  <div class="card">
-    <div class="card-header fw-semibold">5 · Process &amp; Export</div>
-    <div class="card-body">
-      <button class="w-100 btn btn-primary mb-2" id="processBtn" disabled>
+  <!-- 05 · Process & Export ────────────────────────────────────────── -->
+  <div class="step">
+    <div class="step-num">05</div>
+    <div class="step-body">
+      <div class="step-label">Process &amp; Export</div>
+
+      <button class="btn btn-primary btn-block" id="processBtn" disabled>
         <i class="bi-gear"></i> Process SVG
       </button>
-      <div id="progressWrap" style="display:none;" class="mb-2">
-        <div class="progress" style="height:22px;">
+
+      <div id="progressWrap" style="display:none;" class="progress-wrap">
+        <div class="progress-track">
           <div class="progress-bar progress-bar-striped progress-bar-animated"
-               id="progressBar" style="width:100%;">Preparing…</div>
+               id="progressBar">Preparing…</div>
         </div>
       </div>
-      <img id="resultPreview" style="display:none;" class="mb-2">
-      <p class="text-muted small mb-2" id="distanceInfo" style="display:none;"></p>
-      <button class="w-100 btn btn-success mb-2" id="exportBtn" disabled>
+
+      <img id="resultPreview" style="display:none;">
+      <p class="info-text" id="distanceInfo" style="display:none;"></p>
+
+      <button class="btn btn-success btn-block" id="exportBtn" disabled style="margin-top:0.875rem;">
         <i class="bi-download"></i> Export commands file
       </button>
-      <small class="text-muted">
+
+      <p class="export-note">
         Save as <code>mural_commands.txt</code>, then use
         <strong>Import commands</strong> in the MURAL device UI.
-      </small>
+      </p>
     </div>
   </div>
-</div><!-- /container -->
+
+</div><!-- /studio -->
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
@@ -536,7 +876,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('input[name="renderMode"]').forEach(r => {
         r.addEventListener('change', function () {
             const isVRV = this.value === 'vrv';
-            document.getElementById('vrvOptions').style.display        = isVRV ? '' : 'none';
+            document.getElementById('vrvOptions').style.display         = isVRV ? '' : 'none';
             document.getElementById('pathTracingOptions').style.display = isVRV ? 'none' : '';
         });
     });
